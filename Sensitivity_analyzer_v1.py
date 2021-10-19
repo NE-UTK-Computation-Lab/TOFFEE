@@ -314,13 +314,13 @@ def submit_kpert(reaction_list,pert_calls,names,template_file,energies,sub_job=T
         #each material
         for j in range(len(data[i])):
             #each element for that material
-            list_of_data[0]+=str(data[0][0][0][0][0])+','+str(data[0][0][0][0][1])+',,,'
+            list_of_data[0]+=str(data[0][0][0][0])+','+str(data[0][0][0][1])+',,,'
             for k in range(len(reaction_calls)):
 
                 if i==0 and j==0:
-                    list_of_data[k+1]=(str(names[k])+','+str(data[i][j][k+1][0])+','+str(data[i][j][k+1][1])+','+str(abs(data[0][0][0][0]-data[i][j][k+1][0]))+',,')
+                    list_of_data[k+1]=(str(names[k])+','+str(data[i][j][k+1][0][0])+','+str(data[i][j][k+1][0][1])+','+str(abs(data[0][0][0][0]-data[i][j][k+1][0][0]))+',,')
                 else:
-                    list_of_data[k+1]+=str(data[i][j][k+1][0])+','+str(data[i][j][k+1][1])+','+str(((data[0][0][0][0]-data[i][j][k+1][0])*10**5))+',,'
+                    list_of_data[k+1]+=str(data[i][j][k+1][0][0])+','+str(data[i][j][k+1][0][1])+','+str(((data[0][0][0][0]-data[i][j][k+1][0][0])*10**5))+',,'
     
     for i in range(len(list_of_data)):
         if i==0:
@@ -341,7 +341,7 @@ def submit_kpert(reaction_list,pert_calls,names,template_file,energies,sub_job=T
                 if k==0:
                     table[number_of_elements]['Rxn'].append({'Name':'Base','Diff':(data[0][0][0][0]-data[i][j][k][0])*10**5})
                 else:
-                    table[number_of_elements]['Rxn'].append({'Name':names[k-1],'Diff':(data[i][j][k][0]-data[0][0][0][0])*10**5})
+                    table[number_of_elements]['Rxn'].append({'Name':names[k-1],'Diff':(data[i][j][k][0][0]-data[0][0][0][0])*10**5})
                     
             number_of_elements+=1
     
@@ -413,4 +413,3 @@ calls=make_pert_cards('base_k_temp.txt',0.1,reaction_calls,energy_bins)
 table_output,full=submit_kpert(reaction_calls,calls,reaction_names,'base_k_temp.txt',energy_bins,False)
 
 print('done')
-       
