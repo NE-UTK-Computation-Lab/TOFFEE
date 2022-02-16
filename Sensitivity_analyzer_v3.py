@@ -25,8 +25,8 @@ energy_bins=[round(a/10**6,12) for a in energy_bins_temp]
 
 
 
-##########create perturbation strings
-##inputs
+##### This function creates perturbation strings
+###inputs
 #template_name is the name of the mcnp file the sensitivity analysis will be used on
 #density_change is the value of percent of macroscopic cross section perturbed. A good value to use is 0.01. This is used for ksen problems, but still should be given an arbitrary value.
 #reactions is a list of reactions that a preturbation is desired. This refers to the variable reaction_calls used created in the input section
@@ -220,13 +220,13 @@ def make_pert_cards(template_name,density_change,reactions,erg_bins,run_type):
 
 
 
-########## This function creates submission scripts and submits MCNP jobs to the UTK NE cluster.
+##### This function creates submission scripts and submits MCNP jobs to the UTK NE cluster.
 ###inputs
 #job_name- the naming string for the given run. Example:if you wanted to run job_in.txt the input would be 'job' 
 def submit_to_cluster(job_name):
     # The folder this is called in must contain a mcnp input titled job_name_in.txt
     # This line writes the script text to submit the job
-    cluster_input_string=' #!/bin/bash \n #PBS -V \n #PBS -q corei7 \n #PBS -l nodes=1:ppn=8 \n hostname \n module load MCNP6/2.0 \n RTP="/tmp/runtp--".`date "+%R%N"` \n cd $PBS_O_WORKDIR \n mcnp6 TASKS 8 I=%%%INPUT%%%_in.txt O=%%%INPUT%%%_out.txt runtpe=$RTP \n grep -a "final result" %%%INPUT%%%_out.txt > %%%INPUT%%%_done.dat \n rm $RTP'
+    cluster_input_string=' #!/bin/bash \n #PBS -V \n #PBS -q corei7 \n #PBS -l nodes=1:ppn=8 \n hostname \n module load MCNP6/2.0 \n RTP="/tmp/runtp--".`date "+%R%N"` \n cd $PBS_O_WORKDIR \n mcnp6 TASKS 8 I=%%%INPUT%%%_in.txt O=%%%INPUT%%%_out.txt SRCTP=srctp_%%%INPUT%%% runtpe=$RTP \n grep -a "final result" %%%INPUT%%%_out.txt > %%%INPUT%%%_done.dat \n rm $RTP'
     # This replace the %%%input%%% text with the given job_name 
     script_string = cluster_input_string.replace("%%%INPUT%%%", job_name)
     # This line creates the name for the submission script for the cluster
@@ -251,41 +251,60 @@ def submit_to_cluster(job_name):
     current_Dir = os.getcwd()
     os.system('ssh -tt necluster.ne.utk.edu "cd ' + current_Dir + ' && qsub ' + script_file_string+ '>> cluster_submissions.txt'+'"')
     output_string=job_name+'_out.txt'
-    #this loop looks for a file created at the end of a MCNP run
-    while not os.path.exists(job_name+'_done.dat'):
-        template=open('cluster_submissions.txt','r')
-        #This reads through the text file created above to see if an error has occured
-        for line in template:
-            if 'socket_connect_unix failed' in line:
-                #if this line is found the job is resubmitted
-                os.remove('cluster_submissions.txt')
-                time.sleep(5)
-                os.system('ssh -tt necluster.ne.utk.edu "cd ' + current_Dir + ' && qsub ' + script_file_string+ '>> cluster_submissions.txt'+'"')
-            else:
-                #if not then the code waits for the output file
-                print('Job not complete waiting 15 seconds')
-                time.sleep(15)
-        template.close()
-    #This shows the job is finished
-    print('file found')
-    #waits some time to ensure files are finished updating
-    time.sleep(15)
-    #removes job_done.dat and cluster_submissions files
-    os.remove(job_name+'_done.dat')
+    time.sleep(5)
+    template=open('cluster_submissions.txt','r')
+    for line in template:
+         if 'socket_connect_unix failed' in line:
+             #if this line is found the job is resubmitted
+             os.remove('cluster_submissions.txt')
+             time.sleep(5)
+             os.system('ssh -tt necluster.ne.utk.edu "cd ' + current_Dir + ' && qsub ' + script_file_string+ '>> cluster_submissions.txt'+'"')
+         else:
+            #if not then the code waits for the output file
+            print('Job successfully submitted')
+    template.close()
     os.remove('cluster_submissions.txt')
-    print('file removed')
-    #deletes temp MCNP file
-    if os.path.exists('srctp'):
-        os.remove('srctp')
+    
+    
+    
     return output_string
 ###output
 #The output of this function is the name of the output file created with the cluster submission
 
 
 
+##### This function verifies that a given job has completed on the cluster
+###inputs
+#job_name- This is the name of a given run that is being checked without _in.txt extention
+#ie,job_0_0_0 to see if job_0_0_0_in.txt is finished
+def check_cluster_job(job_name):
+    print('Checking',job_name)
+    #this loop looks for a file created at the end of a MCNP run
+    if not os.path.exists(job_name+'_done.dat'):
+        job_finish=False   
+    else:
+        #This shows the job is finished
+        print('file found')
+        #removes job_done.dat and cluster_submissions files
+        # this will remove the _done.dat file if that is desired. Recommend that you comment out when debugging and uncomment once
+        #finished with your coding changes
+        # alls you to run the read mechinism on the same output files without having to remake the _done.dat files
+        #os.remove(job_name+'_done.dat')
+        print('file removed')
+        #deletes temp MCNP file
+        if os.path.exists('srctp'+job_name):
+            os.remove('srctp_'+job_name)
+        job_finish=True
+    return job_finish
+###output
+#job_finish- booleon that determine if the job was complete(True) or still waiting(False)
 
 
-#######This function pulls the data for a covariance matrix from a csv file and creates a matrix that can be used by python
+
+
+
+
+#####This function pulls the data for a covariance matrix from a csv file and creates a matrix that can be used by python
 ###inputs
 #element- a text string that represents the MCNP style string of an element with the library specified. ie 1001.70c is valid, 1001 is not currently
 #reaction- a texte string that meets the format needed for the perturbation card style of formating. ie rxn=1 is valid, 1 is not
@@ -465,7 +484,7 @@ def read_ksen_code(out_file,energy_b,element,reaction):
 #element- string containing the isotope name for this kpert run of MCNP perturbation,ie 1001.70c
 #reaction- string containg the reaction used for this perturbation in KPERT language, ie rxn=1
 #perturb- The value used for perturbation, ie if 1.001 if perturbed, perturb=0.001
-def read_sdef_code(out_file,element,reaction,energy_b,perturb):
+def read_pert_code(out_file,energy_b,element,reaction,perturb):
     #Initializing temp files
     tally_base=[0,0]
     # prints the file being used for data analysis
@@ -554,10 +573,10 @@ def read_sdef_code(out_file,element,reaction,energy_b,perturb):
 
 
 
-
+####### ksen function
 ##### This function takes the perturbation cards created with the make_pert_cards function and executes them, then reads
 ##### the data with the particular read function. This function also creates a csv file for easy data analysis, as well as
-##### a dictonary containing the same data
+##### a dictonary containing the same data 
 ### Inputs
 #reaction_list- This is the list of reactions that the run will analyze(see reaction_calls in initializations)
 #pert_calls- This is the output from the make_pert_cards function called list_of_pert
@@ -568,10 +587,9 @@ def read_sdef_code(out_file,element,reaction,energy_b,perturb):
     #containg the isotopes present in said material
 #template_file- This is the file name the sensitivity analysis will be done on.
 #energies- A list containing the energy bin structure for the system
-#density_change- The value of perturbation used
 #sub_job- Given as True, where True means to submit MCNP jobs and False means to read data from files that have already ran.
     #This is useful for debugging
-def submit_ksen(reaction_list,pert_calls,new_materials,names,element_list,template_file,energies,density_change,sub_job=True):
+def submit_ksen(reaction_list,pert_calls,new_materials,names,element_list,template_file,energies,sub_job=True):
     # These lines are used for making the CSV file have columns that line up properly
     top_string=','
     top_string_two=','
@@ -581,7 +599,7 @@ def submit_ksen(reaction_list,pert_calls,new_materials,names,element_list,templa
     # This loop also initializes the dictionary of uncertainty values
     for i in range(len(pert_calls)):
         # notes the material we the isotopes are in
-        top_string+='Material'+str(i+1)
+        top_string+='Material '+str(i+1)
         # this loop tells cyles throught the isotopes used
         for j in range(len(pert_calls[i])):
             #pulls the isotope name from the fisrt pert call
@@ -606,82 +624,131 @@ def submit_ksen(reaction_list,pert_calls,new_materials,names,element_list,templa
     output_file.close()
     
     
-    #This loop is the major section of this function
-    # This loop is where the MCNP files are created, then executes the files on the utk ne cluster through submit_to_cluster
-    # After the results are read with the read_ksen_code function
-    #### This loop is under construction where I may add parallelization to this section
-    data=[]
-    vect=[]
-    m=1
+    ########This loop is the major section of this function
+    # this is a list of the input jobs submitted the the cluster
+    job_names=[]
+    # This is a list of the output file names created for the input jobs
+    out_names=[]
+    # this chain of loops writes the MCNP jobs with the ksen cards
+    # this loops cycles through materials present in the MCNP card
     for i in range(len(pert_calls)):
-        data.append([])
+        # this makes a new list for each material to seperate outputs
+        out_names.append([])
+        #cycles through the isotopes of the material i
         for j in range(len(pert_calls[i])):
-            #####multiprocess this section first
+            # this will seperate outputs by isotopes within the materials
+            out_names[i].append([])
+            # this cycles through different reactions
             for k in range(len(pert_calls[i][j])):
+                #creating a unique MCNP job name for this isotope j in material i with reaction k
                 job_num='job_'+str(i)+'_'+str(j)+'_'+str(k)
+                # opening the file for writing input MCNP file
                 job=open(job_num+'_in.txt','w')
                 write_string=''
+                # creating a write string to add at the end of the MCNP file
+                # l is the number of energy bins
                 for l in range(len(pert_calls[i][j][k])):
                     write_string+=pert_calls[i][j][k][l]
-
+                #this section copies the template into the new input file
                 template=open(template_file,'r')
                 for line in template:
                     job.write(line)
-                    if 'c End Materials' in line:
-                        job.write('c PERT Materials'+'\n')
-                        for material in new_materials:
-                            job.write(material)
-                        job.write('c End PERT Materials'+'\n')    
                 template.close()
+                # this adds the the ksen cards string
                 job.write(write_string)
                 job.close()
+                # this checks if the jobs are to be submitted to the cluster
                 if sub_job==True:
+                    # uses the function below to submit to the NEcluster at utk
                     out=submit_to_cluster(job_num)
                 else:
+                    # if we don't submit, this assumes the jobs have already been run
                     out=job_num+'_out.txt'
+                # adds the new job name to a list
+                job_names.append(job_num)
+                # adds the output name to the list of lists in the particular location of the isotope and reaction within the material
+                out_names[i][j].append(out)
                 
+                
+    # making a copy of jobs run list so we can remove a job to verify all jobs have been finished running
+    job_names_2=copy.deepcopy(job_names)            
+    while job_names_2!=[]:
+        for i in range(len(job_names)):
+            # this function checks if the jobs have been complete
+            is_complete=check_cluster_job(job_names[i])
+            if is_complete==True and job_names[i] in job_names_2:
+                job_names_2.remove(job_names[i])
+                        
+                    
+    ### this loop reads the results of the MCNP files
+    # these are temp variables
+    data=[]
+    vect=[]
+    m=1            
+    # same cylce as submitting the jobs
+    # materials, then isotopes, then reactions
+    for i in range(len(pert_calls)):
+        data.append([])
+        for j in range(len(pert_calls[i])):
+            for k in range(len(pert_calls[i][j])): 
+                # the reaction and element for calling covariance matrix                             
                 react=reaction_list[k]
                 element_cov=element_list[i][j]
-                vect.append(read_ksen_code(out,energies,element_cov,react))
-                if m==5:
+                # using the read function to pull the variance for the element and reaction
+                vect.append(read_ksen_code(out_names[i][j][k],energies,element_cov,react))
+                # this waits for the vector to be the size of the reaction list. We run all reactions for all elements
+                if m==len(reaction_list):
                     data[i].append(vect)
                     vect=[]
                     m=0
-                m=m+1
+                m=m+1  
                 
+                
+    # this loop takes that data and makes a list that is used to print the csv file data            
     list_of_data=[]
     for i in range(len(data[0][0])-1):
-        list_of_data.append([])
-        
+        list_of_data.append([])        
     list_of_data.append([])
     list_of_data[0]=','
+    #each material
     for i in range(len(data)):
-        #each material
+        #each element for that material
         for j in range(len(data[i])):
-            #each element for that material
+            #each reaction for this element
             for k in range(len(reaction_calls)):
-
+                # this is for the first element of the row
+                # this makes the rows in the csv
                 if i==0 and j==0:
                     list_of_data[k]=(str(names[k])+','+str(float(data[i][j][k][0]))+',,')
+                    #all other elements of the row
                 else:
                     list_of_data[k]+=str(float(data[i][j][k][0]))+',,'
-    
+                    
+                    
+    # This writes the data to the csv file
     for i in range(len(list_of_data)):
-        output_file=open("data_output_k.csv", 'a')
+        output_file=open("data_output_ksen.csv", 'a')
         output_file.write(list_of_data[i]+'\n')
         output_file.close()
-            
-    number_of_elements=0
-    for i in range(len(data)):
         
+        
+    # This section creates a list of dictionaries to analysis the data from the functions
+    # This is intended to be used by a AI optimization code
+    number_of_elements=0
+    for i in range(len(data)):    
         for j in range(len(data[i])):
             table[number_of_elements]['Rxn']=[]
             for k in range(len(data[i][j])):
-                table[number_of_elements]['Rxn'].append({'Name':names[k],'Uncertainty':(float(data[i][j][k][0][0]))})
-                    
+                # this reports the name of the 
+                table[number_of_elements]['Rxn'].append({'Name':names[k],'Uncertainty':(float(data[i][j][k][0]))})
             number_of_elements+=1
     
+    
+    # Creates a duplicate of the table above so we can keep an original and do some changes
     full_table=copy.deepcopy(table)
+    
+    ##This loop removes elements from the list that have a 0 for uncertainty due to the reaction not being present for the given element
+    ##ie h-1 fission rxn variance
     for out in table:
         removal_list=[]
         for react in out['Rxn']:
@@ -694,47 +761,16 @@ def submit_ksen(reaction_list,pert_calls,new_materials,names,element_list,templa
     
             
     return table,full_table
-
-# def test_multi(pert_calls,template_file,new_materials,sub_job):
-#     data=[]
-#     vect=[]
-#     m=1
-#     for i in range(len(pert_calls)):
-#         data.append([])
-#         for j in range(len(pert_calls[i])):
-#             for k in range(len(pert_calls[i][j])):
-#                 job_num='job_'+str(i)+'_'+str(j)+'_'+str(k)
-#                 job=open(job_num+'_in.txt','w')
-#                 write_string=''
-#                 for l in range(len(pert_calls[i][j][k])):
-#                     write_string+=pert_calls[i][j][k][l]
-
-#                 template=open(template_file,'r')
-#                 for line in template:
-#                     job.write(line)
-#                     if 'c End Materials' in line:
-#                         job.write('c PERT Materials'+'\n')
-#                         for material in new_materials:
-#                             job.write(material)
-#                         job.write('c End PERT Materials'+'\n')    
-#                 template.close()
-#                 job.write(write_string)
-#                 job.close()
-#                 if sub_job==True:
-#                     out=submit_to_cluster(job_num)
-#                 else:
-#                     out=job_num+'_out.txt'
-                
-#                 react=reaction_list[k]
-#                 element_cov=element_list[i][j]
-#                 vect.append(read_ksen_code(out,reaction_list,energies,element_cov,react,density_change))
-#                 if m==5:
-#                     data[i].append(vect)
-#                     vect=[]
-#                     m=0
-#                 m=m+1
+### output
+# table- the list of non zero dictionaries of variances with given material, element, and reaction
+# full_table- the list of all dictionaries of variances with given material, element, and reaction
 
 
+
+
+
+
+####### kpert function
 ##### This function takes the perturbation cards created with the make_pert_cards function and executes them, then reads
 ##### the data with the particular read function. This function also creates a csv file for easy data analysis, as well as
 ##### a dictonary containing the same data
@@ -757,41 +793,64 @@ def submit_kpert(reaction_list,pert_calls,new_materials,names,element_list,templ
     top_string_two=','
     top_string_three='Reactions,'
     table=[]
-    #
+    # This loop appends the csv file with the materials being used within the system
+    # This loop also initializes the dictionary of uncertainty values
     for i in range(len(pert_calls)):
-        top_string+='Material'+str(i+1)
+        # notes the material we the isotopes are in
+        top_string+='Material '+str(i+1)
+        # this loop tells cyles throught the isotopes used
         for j in range(len(pert_calls[i])):
+            #pulls the isotope name from the fisrt pert call
             line_split=pert_calls[i][j][0][0].split()
             word=line_split[3]
-            element_string=''
-            for x in range(len(word)):
-                if x>=4:
-                    element_string+=word[x]
+            #this removes the library name of the material is one is present
+            element_number_1=int(word[4])
+            element_number_2=int(word[5:])
+            element_string=element_list[element_number_1-1][element_number_2-1]
+            if '.' in element_string:
+                element_string=element_string[:-4]
+############# create a list of names to call from and do a if x=y then add isotope name here
             top_string_two+=element_string+',,'
+###############
+            # This section formats the text in the table
             top_string+=',,'
             top_string_three+='keff,,'
+            # Initializing the dictionary
             temp_dict={'Material':str(i+1),'Element':element_string}
             table.append(temp_dict)
-        
-    output_file=open("data_output_k.csv", 'w')
+            
+    #This section opens a csv file, writes the header information, then closes the csv file
+    output_file=open("data_output_kpert.csv", 'w')
     output_file.write(top_string+'\n'+top_string_two+'\n'+top_string_three+'\n')
     output_file.close()
     
     
-    
-    data=[]
-    vect=[]
-    m=1
+    ########This loop is the major section of this function
+    # this is a list of the input jobs submitted the the cluster
+    job_names=[]
+    # This is a list of the output file names created for the input jobs
+    out_names=[]
+    # this chain of loops writes the MCNP jobs with the kpert cards
+    # this loops cycles through materials present in the MCNP card
     for i in range(len(pert_calls)):
-        data.append([])
+        # this makes a new list for each material to seperate outputs
+        out_names.append([])
+        #cycles through the isotopes of the material i
         for j in range(len(pert_calls[i])):
+            # this will seperate outputs by isotopes within the materials
+            out_names[i].append([])
+            # this cycles through different reactions
             for k in range(len(pert_calls[i][j])):
+                #creating a unique MCNP job name for this isotope j in material i with reaction k
                 job_num='job_'+str(i)+'_'+str(j)+'_'+str(k)
+                # opening the file for writing input MCNP file
                 job=open(job_num+'_in.txt','w')
                 write_string=''
+                # creating a write string to add at the end of the MCNP file
+                # l is the number of energy bins
                 for l in range(len(pert_calls[i][j][k])):
                     write_string+=pert_calls[i][j][k][l]
-
+                #this section copies the template into the new input file
                 template=open(template_file,'r')
                 for line in template:
                     job.write(line)
@@ -799,57 +858,103 @@ def submit_kpert(reaction_list,pert_calls,new_materials,names,element_list,templ
                         job.write('c PERT Materials'+'\n')
                         for material in new_materials:
                             job.write(material)
-                        job.write('c End PERT Materials'+'\n')    
+                        job.write('c End PERT Materials'+'\n') 
                 template.close()
+                # this adds the the kpert cards string
                 job.write(write_string)
                 job.close()
+                # this checks if the jobs are to be submitted to the cluster
                 if sub_job==True:
+                    # uses the function below to submit to the NEcluster at utk
                     out=submit_to_cluster(job_num)
                 else:
+                    # if we don't submit, this assumes the jobs have already been run
                     out=job_num+'_out.txt'
+                # adds the new job name to a list
+                job_names.append(job_num)
+                # adds the output name to the list of lists in the particular location of the isotope and reaction within the material
+                out_names[i][j].append(out)
                 
+                
+    # making a copy of jobs run list so we can remove a job to verify all jobs have been finished running
+    job_names_2=copy.deepcopy(job_names)            
+    while job_names_2!=[]:
+        for i in range(len(job_names)):
+            # this function checks if the jobs have been complete
+            is_complete=check_cluster_job(job_names[i])
+            if is_complete==True and job_names[i] in job_names_2:
+                job_names_2.remove(job_names[i])
+                        
+                    
+    ### this loop reads the results of the MCNP files
+    # these are temp variables
+    data=[]
+    vect=[]
+    m=1            
+    # same cylce as submitting the jobs
+    # materials, then isotopes, then reactions
+    for i in range(len(pert_calls)):
+        data.append([])
+        for j in range(len(pert_calls[i])):
+            for k in range(len(pert_calls[i][j])): 
+                # the reaction and element for calling covariance matrix                             
                 react=reaction_list[k]
                 element_cov=element_list[i][j]
-                vect.append(read_ksen_code(out,reaction_list,energies,element_cov,react,density_change))
-                if m==5:
+                # using the read function to pull the variance for the element and reaction
+                vect.append(read_kpert_code(out_names[i][j][k],energies,element_cov,react,density_change))
+                # this waits for the vector to be the size of the reaction list. We run all reactions for all elements
+                if m==len(reaction_list):
                     data[i].append(vect)
                     vect=[]
                     m=0
-                m=m+1
+                m=m+1  
                 
+                
+    # this loop takes that data and makes a list that is used to print the csv file data            
     list_of_data=[]
     for i in range(len(data[0][0])-1):
-        list_of_data.append([])
-        
+        list_of_data.append([])        
     list_of_data.append([])
     list_of_data[0]=','
+    #each material
     for i in range(len(data)):
-        #each material
+        #each element for that material
         for j in range(len(data[i])):
-            #each element for that material
+            #each reaction for this element
             for k in range(len(reaction_calls)):
-
+                # this is for the first element of the row
+                # this makes the rows in the csv
                 if i==0 and j==0:
                     list_of_data[k]=(str(names[k])+','+str(float(data[i][j][k][0]))+',,')
+                    #all other elements of the row
                 else:
                     list_of_data[k]+=str(float(data[i][j][k][0]))+',,'
-    
+                    
+                    
+    # This writes the data to the csv file
     for i in range(len(list_of_data)):
-        output_file=open("data_output_k.csv", 'a')
+        output_file=open("data_output_kpert.csv", 'a')
         output_file.write(list_of_data[i]+'\n')
         output_file.close()
-            
-    number_of_elements=0
-    for i in range(len(data)):
         
+        
+    # This section creates a list of dictionaries to analysis the data from the functions
+    # This is intended to be used by a AI optimization code
+    number_of_elements=0
+    for i in range(len(data)):    
         for j in range(len(data[i])):
             table[number_of_elements]['Rxn']=[]
             for k in range(len(data[i][j])):
-                table[number_of_elements]['Rxn'].append({'Name':names[k],'Uncertainty':(float(data[i][j][k][0][0]))})
-                    
+                # this reports the name of the 
+                table[number_of_elements]['Rxn'].append({'Name':names[k],'Uncertainty':(float(data[i][j][k][0]))})
             number_of_elements+=1
     
+    
+    # Creates a duplicate of the table above so we can keep an original and do some changes
     full_table=copy.deepcopy(table)
+    
+    ##This loop removes elements from the list that have a 0 for uncertainty due to the reaction not being present for the given element
+    ##ie h-1 fission rxn variance
     for out in table:
         removal_list=[]
         for react in out['Rxn']:
@@ -862,51 +967,94 @@ def submit_kpert(reaction_list,pert_calls,new_materials,names,element_list,templ
     
             
     return table,full_table
+### output
+# table- the list of non zero dictionaries of variances with given material, element, and reaction
+# full_table- the list of all dictionaries of variances with given material, element, and reaction
 
 
 
 
+
+####### pert function
+##### This function takes the perturbation cards created with the make_pert_cards function and executes them, then reads
+##### the data with the particular read function. This function also creates a csv file for easy data analysis, as well as
+##### a dictonary containing the same data
+### Inputs
+#reaction_list- This is the list of reactions that the run will analyze(see reaction_calls in initializations)
+#pert_calls- This is the output from the make_pert_cards function called list_of_pert
+#new_materials- This is the output from the make_pert_cards function called list_of_new_materials
+#names- This is a list of typical names given to the MT card reactions. This should mirror reaction_list such as:
+    #reaction_list=['rxn=1']    names=['Total']. The naming does not matter and is used for making tables make more sense
+#element_list- This is a list of list where the elements of the outer list represent the material. Each material is a list 
+    #containg the isotopes present in said material
+#template_file- This is the file name the sensitivity analysis will be done on.
+#energies- A list containing the energy bin structure for the system
+#density_change- The value of perturbation used
+#sub_job- Given as True, where True means to submit MCNP jobs and False means to read data from files that have already ran.
+    #This is useful for debugging
 def submit_pert(reaction_list,pert_calls,new_materials,names,element_list,template_file,energies,density_change,sub_job=True):
+    # These lines are used for making the CSV file have columns that line up properly
     top_string=','
     top_string_two=','
     top_string_three='Reactions,'
     table=[]
+    # This loop appends the csv file with the materials being used within the system
+    # This loop also initializes the dictionary of uncertainty values
     for i in range(len(pert_calls)):
-        top_string+='Material'+str(i+1)
+        # notes the material we the isotopes are in
+        top_string+='Material '+str(i+1)
+        # this loop tells cyles throught the isotopes used
         for j in range(len(pert_calls[i])):
+            #pulls the isotope name from the fisrt pert call
             line_split=pert_calls[i][j][0][0].split()
             word=line_split[3]
-            element_string=''
-            for x in range(len(word)):
-                if x>=4:
-                    element_string+=word[x]
+            element_number_1=int(word[4])
+            element_number_2=int(word[5:])
+            element_string=element_list[element_number_1-1][element_number_2-1]
+            if '.' in element_string:
+                element_string=element_string[:-4]
+############# create a list of names to call from and do a if x=y then add isotope name here
             top_string_two+=element_string+',,'
+###############
+            # This section formats the text in the table
             top_string+=',,'
-            top_string_three+='uncertainty,,'
+            top_string_three+='keff,,'
+            # Initializing the dictionary
             temp_dict={'Material':str(i+1),'Element':element_string}
             table.append(temp_dict)
-        
-    output_file=open("data_output_sdef.csv", 'w')
+            
+    #This section opens a csv file, writes the header information, then closes the csv file
+    output_file=open("data_output_pert.csv", 'w')
     output_file.write(top_string+'\n'+top_string_two+'\n'+top_string_three+'\n')
     output_file.close()
     
     
-    
-    data=[]
-    vect=[]
-    m=1
-    # This section builds the input decks 
-    # This section will be where to make runs faster
+    ########This loop is the major section of this function
+    # this is a list of the input jobs submitted the the cluster
+    job_names=[]
+    # This is a list of the output file names created for the input jobs
+    out_names=[]
+    # this chain of loops writes the MCNP jobs with the pert cards
+    # this loops cycles through materials present in the MCNP card
     for i in range(len(pert_calls)):
-        data.append([])
+        # this makes a new list for each material to seperate outputs
+        out_names.append([])
+        #cycles through the isotopes of the material i
         for j in range(len(pert_calls[i])):
+            # this will seperate outputs by isotopes within the materials
+            out_names[i].append([])
+            # this cycles through different reactions
             for k in range(len(pert_calls[i][j])):
+                #creating a unique MCNP job name for this isotope j in material i with reaction k
                 job_num='job_'+str(i)+'_'+str(j)+'_'+str(k)
+                # opening the file for writing input MCNP file
                 job=open(job_num+'_in.txt','w')
                 write_string=''
+                # creating a write string to add at the end of the MCNP file
+                # l is the number of energy bins
                 for l in range(len(pert_calls[i][j][k])):
                     write_string+=pert_calls[i][j][k][l]
-
+                #this section copies the template into the new input file
                 template=open(template_file,'r')
                 for line in template:
                     job.write(line)
@@ -914,59 +1062,103 @@ def submit_pert(reaction_list,pert_calls,new_materials,names,element_list,templa
                         job.write('c PERT Materials'+'\n')
                         for material in new_materials:
                             job.write(material)
-                        job.write('c End PERT Materials'+'\n')    
+                        job.write('c End PERT Materials'+'\n') 
                 template.close()
+                # this adds the the pert cards string
                 job.write(write_string)
                 job.close()
+                # this checks if the jobs are to be submitted to the cluster
                 if sub_job==True:
+                    # uses the function below to submit to the NEcluster at utk
                     out=submit_to_cluster(job_num)
                 else:
+                    # if we don't submit, this assumes the jobs have already been run
                     out=job_num+'_out.txt'
-                    
+                # adds the new job name to a list
+                job_names.append(job_num)
+                # adds the output name to the list of lists in the particular location of the isotope and reaction within the material
+                out_names[i][j].append(out)
                 
+                
+    # making a copy of jobs run list so we can remove a job to verify all jobs have been finished running
+    job_names_2=copy.deepcopy(job_names)            
+    while job_names_2!=[]:
+        for i in range(len(job_names)):
+            # this function checks if the jobs have been complete
+            is_complete=check_cluster_job(job_names[i])
+            if is_complete==True and job_names[i] in job_names_2:
+                job_names_2.remove(job_names[i])
+                        
+                    
+    ### this loop reads the results of the MCNP files
+    # these are temp variables
+    data=[]
+    vect=[]
+    m=1            
+    # same cylce as submitting the jobs
+    # materials, then isotopes, then reactions
+    for i in range(len(pert_calls)):
+        data.append([])
+        for j in range(len(pert_calls[i])):
+            for k in range(len(pert_calls[i][j])): 
+                # the reaction and element for calling covariance matrix                             
                 react=reaction_list[k]
                 element_cov=element_list[i][j]
-                vect.append(read_sdef_code(out,element_cov,react,energies,density_change))
-                if m==5:
+                # using the read function to pull the variance for the element and reaction
+                vect.append(read_pert_code(out_names[i][j][k],energies,element_cov,react,density_change))
+                # this waits for the vector to be the size of the reaction list. We run all reactions for all elements
+                if m==len(reaction_list):
                     data[i].append(vect)
                     vect=[]
                     m=0
-                m=m+1
-            
+                m=m+1  
+                
+                
+    # this loop takes that data and makes a list that is used to print the csv file data            
     list_of_data=[]
-    for i in range(len(data[0][0])):
-        list_of_data.append([])
-        
+    for i in range(len(data[0][0])-1):
+        list_of_data.append([])        
     list_of_data.append([])
     list_of_data[0]=','
+    #each material
     for i in range(len(data)):
-        #each material
+        #each element for that material
         for j in range(len(data[i])):
-            #each element for that material
-            list_of_data[0]+=str(float(data[i][j][0][0]))+',,'
+            #each reaction for this element
             for k in range(len(reaction_calls)):
-
+                # this is for the first element of the row
+                # this makes the rows in the csv
                 if i==0 and j==0:
-                    list_of_data[k+1]=(str(names[k])+','+str(float(data[i][j][k][0]))+',,')
+                    list_of_data[k]=(str(names[k])+','+str(float(data[i][j][k][0]))+',,')
+                    #all other elements of the row
                 else:
-                    list_of_data[k+1]+=str(float(data[i][j][k][0]))+',,'
-    
+                    list_of_data[k]+=str(float(data[i][j][k][0]))+',,'
+                    
+                    
+    # This writes the data to the csv file
     for i in range(len(list_of_data)):
-        output_file=open("data_output_sdef.csv", 'a')
+        output_file=open("data_output_pert.csv", 'a')
         output_file.write(list_of_data[i]+'\n')
         output_file.close()
-            
-    number_of_elements=0
-    for i in range(len(data)):
         
+        
+    # This section creates a list of dictionaries to analysis the data from the functions
+    # This is intended to be used by a AI optimization code
+    number_of_elements=0
+    for i in range(len(data)):    
         for j in range(len(data[i])):
             table[number_of_elements]['Rxn']=[]
             for k in range(len(data[i][j])):
-                table[number_of_elements]['Rxn'].append({'Name':names[k],'Uncertainty':(float(data[i][j][k][0][0]))})
-                    
+                # this reports the name of the 
+                table[number_of_elements]['Rxn'].append({'Name':names[k],'Uncertainty':(float(data[i][j][k][0]))})
             number_of_elements+=1
     
+    
+    # Creates a duplicate of the table above so we can keep an original and do some changes
     full_table=copy.deepcopy(table)
+    
+    ##This loop removes elements from the list that have a 0 for uncertainty due to the reaction not being present for the given element
+    ##ie h-1 fission rxn variance
     for out in table:
         removal_list=[]
         for react in out['Rxn']:
@@ -976,12 +1168,38 @@ def submit_pert(reaction_list,pert_calls,new_materials,names,element_list,templa
         for elements in removal_list:
             out['Rxn'].remove(elements)
     
+    
             
     return table,full_table
+### output
+# table- the list of non zero dictionaries of variances with given material, element, and reaction
+# full_table- the list of all dictionaries of variances with given material, element, and reaction
 
-    
-    
-[calls,material_update,element_list]=make_pert_cards('base_k_temp.txt',0.01,reaction_calls,energy_bins,'ksen')
-table_output,full=submit_ksen(reaction_calls,calls,material_update,reaction_names,element_list,'base_k_temp.txt',energy_bins,0.01,False)
+#Used to determine the run time of the problem
+time_1=time.time()
 
+
+########### calling the functions properly    
+#### making ksen example
+# 'base_k_temp.txt- the MCNP input that the ksen analysis is being done on
+# 0.01- The value of perturbation used, not used for 'ksen' card, but required for other methods
+# reaction_calls- see inputs section
+# energy_bins- see inputs section
+# 'ksen'- signifies a ksen run of sensitivities
+[calls,material_update,element_list]=make_pert_cards('base_sdef_temp.txt',0.01,reaction_calls,energy_bins,'pert')
+
+# calls,material_update-output from make_pert_cards
+# reaction_calls- see inputs section
+# reaction_names- see inputs section
+# elements_list- see inputs section
+# 'base_k_temp.txt'- the MCNP input used for analysis
+# energy_bins- see inputs section
+# False- signifies that jobs are not submitted to cluster
+table_output,full=submit_pert(reaction_calls,calls,material_update,reaction_names,element_list,'base_sdef_temp.txt',energy_bins,0.01,False)
+
+#This will tell how long the job runs for
 print('done')
+script_file = open('time.txt', 'w')
+script_file.write(str(time.time()-time_1)+' Seconds needed to run')
+script_file.close()
+        
