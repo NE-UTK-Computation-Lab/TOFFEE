@@ -18,7 +18,7 @@ material_names=[['1001.70c','H1'],['8016.70c','O16'],['92234.70c','U234'],['9223
 # This is the value of the energy bin in MeV
 #These energy bins are the ones used in the covariance matrix used to find the variance due to the cross section
 energy_bins_temp=[1.00E-5,4.00E-03,1.00E-02,2.53E-02,4.00E-02,5.00E-02,6.00E-02,8.00E-02,1.00E-01,1.50E-01,2.00E-01,2.50E-01,3.25E-01,3.50E-01,3.75E-01,4.50E-01,6.25E-01,1.01E+00,1.08E+00,1.13E+00,5.00E+00,6.25E+00,6.50E+00,6.88E+00,7.00E+00,2.05E+01,2.12E+01,2.18E+01,3.60E+01,3.71E+01,6.50E+01,6.75E+01,1.01E+02,1.05E+02,1.16E+02,1.18E+02,1.88E+02,1.92E+02,2.25E+03,3.74E+03,1.70E+04,2.00E+04,5.00E+04,2.00E+05,2.70E+05,3.30E+05,4.70E+05,6.00E+05,7.50E+05,8.61E+05,1.20E+06,1.50E+06,1.85E+06,3.00E+06,4.30E+06,6.43E+06,2.00E+07]
-#Converts energy bin values to eV
+#Converts energy bin values to MeV
 energy_bins=[round(a/10**6,12) for a in energy_bins_temp]
 
 
