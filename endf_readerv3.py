@@ -2,7 +2,6 @@
 import numpy as np
 from os.path import exists
 import pathlib
-import time
 
 
 ##### This function converts an ENDF written number to a float in python
@@ -519,9 +518,3 @@ def get_cov_mat(mcnp_number,reaction_number):
         [output_matrix,energy_bins]=get_cov_mat_norm(mcnp_number,reaction_number)
     
     return [output_matrix,energy_bins]
-
-time_1=time.time()
-num='40090'
-test=get_cov_mat(num,16)
-
-print(time.time()-time_1)
