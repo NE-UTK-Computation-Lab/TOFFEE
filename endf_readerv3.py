@@ -75,10 +75,6 @@ def get_cov_mat_norm(mcnp_number,reaction_number):
     filename=get_file_name(mcnp_number)
     energy_bins=[]
     number_of_sets=0 
-    # if len(filename)==17:
-    #     number=int(filename[2:5]+filename[9:12])
-    # else:
-    #     number=int(filename[2:5]+filename[8:11])
     
     # This gets the element written in the form that it can show up in the ENDF data
     # This should include all forms, but different isotopes could deviate from this form and cause a the data to not be found
@@ -317,10 +313,6 @@ def get_cov_mat_sum(mcnp_number,reaction_number):
     ###See get_cov_mat_norm for comments that are the same across both functions
     filename=get_file_name(mcnp_number)
     energy_bins=[]
-    # if len(filename)==17:
-    #     number=int(filename[2:5]+filename[9:12])
-    # else:
-    #     number=int(filename[2:5]+filename[8:11])
     number = int(mcnp_number)
     expon=len(str(number))-1
     if expon>3:
@@ -469,12 +461,8 @@ def get_cov_mat_sum(mcnp_number,reaction_number):
 #reaction_number- an integer representing the MT number of the reaction desired
 def determine_type(mcnp_number,reaction_number):
     filename=get_file_name(mcnp_number)
-    energy_bins=[]
     out='No Data'
-    if len(filename)==17:
-        number=int(filename[2:5]+filename[9:12])
-    else:
-        number=int(filename[2:5]+filename[8:11])
+    number = int(mcnp_number)
     expon=len(str(number))-1
     if expon>3:
         element_string=str(number/10**expon)+'00'+'+'+str(expon)
@@ -487,9 +475,7 @@ def determine_type(mcnp_number,reaction_number):
     in_tally=False
     path_name=str(pathlib.Path(__file__).parent.resolve())
     if exists(path_name+'/endf_neutron_libraries/'+filename)==False:
-        output_matrix=0
-        energy_bins=0
-        return [output_matrix,energy_bins]
+        return out
     
     file=open('endf_neutron_libraries/'+filename)
     for line in file:
