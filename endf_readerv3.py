@@ -454,11 +454,13 @@ def get_cov_mat_sum(mcnp_number,reaction_number):
 #output_matrix - The relative covariance matrix for the given element and reaction
 #energy_bins - The energy bin structure for the covariance matrix
 
-##### This function creates a covariance matrix for ENDF data where the matrix is written as a sum of other reactions
+##### This function determuns the type of data for the given isotope and reaction
 ###inputs
 #mcnp_number - a element written like it would be used in a MCNP material
 #reaction_number- an integer representing the MT number of the reaction desired
 def determine_type(mcnp_number,reaction_number):
+    # This section matches the first section of get_cov_mat_norm
+    # See that function for clarity
     filename=get_file_name(mcnp_number)
     out='No Data'
     number = int(mcnp_number)
@@ -476,6 +478,16 @@ def determine_type(mcnp_number,reaction_number):
     if exists(path_name+'/endf_neutron_libraries/'+filename)==False:
         return out
     
+    # This gets the format of the text that is needed to be found
+    str_rxn=str(reaction_number)
+    if len(str_rxn)==1:
+        str_add='  '+str_rxn
+    elif len(str_rxn)==2:
+        str_add=' '+str_rxn
+    else:
+        str_add=str_rxn
+
+    # This looks for the text in the file
     file=open('endf_neutron_libraries/'+filename)
     for line in file:
         if int(line[-4:])==reaction_number:
@@ -487,34 +499,36 @@ def determine_type(mcnp_number,reaction_number):
                 continue
         
         if in_tally_test==True and in_tally==False:
-            str_rxn=str(reaction_number)
-            if len(str_rxn)==1:
-                str_add='  '+str_rxn
-            elif len(str_rxn)==2:
-                str_add=' '+str_rxn
-            else:
-                str_add=str_rxn
-                
             if  ' 0.000000+0 0.000000+0          0        '+str_add in line:
+                # This takes the number after the reaction and outputs the number
+                # A 1 represents a sum and a 0 represents normal data
                 out= str(float(line[44:55]))
                 break
             else:
                 in_tally_test=False
                 continue
-    
-    
     return out
 ### output
-#output_matrix - The relative covariance matrix for the given element and reaction
-#energy_bins - The energy bin structure for the covariance matrix
+#out- a string containing information on if the data exist and its format
 
+##### This function serves as the main function to make the code easier to call across different codes
+###inputs
+#mcnp_number - a element written like it would be used in a MCNP material
+#reaction_number- an integer representing the MT number of the reaction desired
 def get_cov_mat(mcnp_number,reaction_number):
+    # determine the type of data available
     cov_type=determine_type(mcnp_number,reaction_number)
+    # '1.0' represents summation of other data
     if cov_type=='1.0':
         [output_matrix,energy_bins]=get_cov_mat_sum(mcnp_number,reaction_number)
+    # No data available
     elif cov_type=='No Data':
         return [0,0]
+    # Data is normal format of ENDF file 33
     else:
         [output_matrix,energy_bins]=get_cov_mat_norm(mcnp_number,reaction_number)
     
     return [output_matrix,energy_bins]
+### output
+#output_matrix - The relative covariance matrix for the given element and reaction
+#energy_bins - The energy bin structure for the covariance matrix
