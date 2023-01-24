@@ -4,7 +4,7 @@ import copy
 import numpy as np
 import csv
 from endf_readerv3 import get_cov_mat
-#########Inputs/setting print text
+#########Inputs/setting print text hello
 # This is the list of reactions as they are named
 #list_of_rxn=['rxn 1', 'rxn 2', 'rxn 4', 'rxn 18', 'rxn 102' ]
 # This is the name given to each reaction that is called. This list should mirror the following list
