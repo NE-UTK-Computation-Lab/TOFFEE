@@ -1326,4 +1326,3 @@ print('done')
 script_file = open('info_time.txt', 'w')
 script_file.write(str(time.time()-time_1)+' Seconds needed to run')
 script_file.close()
-        
