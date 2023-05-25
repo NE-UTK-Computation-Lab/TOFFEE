@@ -3,7 +3,6 @@ import time
 import copy
 import numpy as np
 import csv
-from endf_readerv3 import get_cov_mat
 from ERRORR_reader import ERRORR_tools
 
 
@@ -14,7 +13,7 @@ from ERRORR_reader import ERRORR_tools
 #reactions is a list of reactions that a preturbation is desired. This refers to the variable reaction_calls used created in the input section
 #energy_bins is a list of the energy bin system used for the perturbations. This variable is energy_bins, as seen in the inputs section, for my case.
 #run_type is a variable that describes the type of pertuebation cards that will be created. Three options are currently available:'kpert','ksen', and 'pert' 
-def make_pert_cards(template_name,density_change,reactions,energy_bins,run_type):
+def make_mcnp_cards(template_name,density_change,reactions,energy_bins,run_type):
     #This is a working folder for the entire run
     # It should be cleaned out after runs to maintain drive storage
     path=os.getcwd()
@@ -623,13 +622,13 @@ def read_pert_code(out_file,energy_b,element,reaction,perturb,covariance):
 
 
 ####### ksen function
-##### This function takes the perturbation cards created with the make_pert_cards function and executes them, then reads
+##### This function takes the perturbation cards created with the make_mcnp_cards function and executes them, then reads
 ##### the data with the particular read function. This function also creates a csv file for easy data analysis, as well as
 ##### a dictonary containing the same data 
 ### Inputs
 #reaction_list- This is the list of reactions that the run will analyze(see reaction_calls in initializations)
-#pert_calls- This is the output from the make_pert_cards function called list_of_pert
-#new_materials- This is the output from the make_pert_cards function called list_of_new_materials
+#pert_calls- This is the output from the make_mcnp_cards function called list_of_pert
+#new_materials- This is the output from the make_mcnp_cards function called list_of_new_materials
 #names- This is a list of typical names given to the MT card reactions. This should mirror reaction_list such as:
     #reaction_list=['rxn=1']    names=['Total']. The naming does not matter and is used for making tables make more sense
 #element_list- This is a list of list where the elements of the outer list represent the material. Each material is a list 
@@ -848,13 +847,13 @@ def submit_ksen(reaction_list,pert_calls,new_materials,names,element_list,templa
 
 
 ####### kpert function
-##### This function takes the perturbation cards created with the make_pert_cards function and executes them, then reads
+##### This function takes the perturbation cards created with the make_mcnp_cards function and executes them, then reads
 ##### the data with the particular read function. This function also creates a csv file for easy data analysis, as well as
 ##### a dictonary containing the same data
 ### Inputs
 #reaction_list- This is the list of reactions that the run will analyze(see reaction_calls in initializations)
-#pert_calls- This is the output from the make_pert_cards function called list_of_pert
-#new_materials- This is the output from the make_pert_cards function called list_of_new_materials
+#pert_calls- This is the output from the make_mcnp_cards function called list_of_pert
+#new_materials- This is the output from the make_mcnp_cards function called list_of_new_materials
 #names- This is a list of typical names given to the MT card reactions. This should mirror reaction_list such as:
     #reaction_list=['rxn=1']    names=['Total']. The naming does not matter and is used for making tables make more sense
 #element_list- This is a list of list where the elements of the outer list represent the material. Each material is a list 
@@ -1080,13 +1079,13 @@ def submit_kpert(reaction_list,pert_calls,new_materials,names,element_list,templ
 
 
 ####### pert function
-##### This function takes the perturbation cards created with the make_pert_cards function and executes them, then reads
+##### This function takes the perturbation cards created with the make_mcnp_cards function and executes them, then reads
 ##### the data with the particular read function. This function also creates a csv file for easy data analysis, as well as
 ##### a dictonary containing the same data
 ### Inputs
 #reaction_list- This is the list of reactions that the run will analyze(see reaction_calls in initializations)
-#pert_calls- This is the output from the make_pert_cards function called list_of_pert
-#new_materials- This is the output from the make_pert_cards function called list_of_new_materials
+#pert_calls- This is the output from the make_mcnp_cards function called list_of_pert
+#new_materials- This is the output from the make_mcnp_cards function called list_of_new_materials
 #names- This is a list of typical names given to the MT card reactions. This should mirror reaction_list such as:
     #reaction_list=['rxn=1']    names=['Total']. The naming does not matter and is used for making tables make more sense
 #element_list- This is a list of list where the elements of the outer list represent the material. Each material is a list 
@@ -1332,9 +1331,9 @@ if __name__ =='__main__':
     # reaction_calls- see inputs section
     # energy_bins- see inputs section
     # 'ksen'- signifies a ksen run of sensitivities
-    [calls,material_update,element_list,covariance]=make_pert_cards('base_sdef_temp.txt',0.01,reaction_calls,energy_bins,'pert')
+    [calls,material_update,element_list,covariance]=make_mcnp_cards('base_sdef_temp.txt',0.01,reaction_calls,energy_bins,'pert')
     
-    # calls,material_update-output from make_pert_cards
+    # calls,material_update-output from make_mcnp_cards
     # reaction_calls- see inputs section
     # reaction_names- see inputs section
     # elements_list- see inputs section
