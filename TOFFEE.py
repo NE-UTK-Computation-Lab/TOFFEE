@@ -4,26 +4,7 @@ import copy
 import numpy as np
 import csv
 from endf_readerv3 import get_cov_mat
-#########Inputs/setting print text
-# This is the list of reactions as they are named
-#list_of_rxn=['rxn 1', 'rxn 2', 'rxn 4', 'rxn 18', 'rxn 102' ]
-# This is the name given to each reaction that is called. This list should mirror the following list
-reaction_names=['Total', 'Elastic', 'Total inelastic','(n_2n)', 'Total Fission','(n_gamma)','(n_p)']
-# This is a list of the reactions called in a format MCNP can read. The number is the MT number of the reaction desired.
-reaction_calls=['rxn=1', 'rxn=2', 'rxn=4', 'rxn=16','rxn=18', 'rxn=102', 'rxn=103']
-
-#This list is a set of naming pairs for the elements present elements found in MCNP material cards and a common terminology for the element
-#material_names=[['1001.70c','H1'],['6000.70c','C'],['8016.70c','O16'],['11023.70c','Na23'],['13027.70c','Al27'],['14028.70c','Si28'],['14029.70c','Si29'],['14030.70c','Si30'],['20040.70c','Ca40'],['20042.70c','Ca42'],['20043.70c','Ca43'],['20044.70c','Ca44'],['20040.76c','Ca46'],['20048.70c','Ca48'],['26054.70c','Fe54'],['26056.70c','Fe56'],['26057.70c','Fe57'],['26058.70c','Fe58'],['92232.70c','U232'],['92234.70c','U234'],['92235.70c','U235'],['92236.70c','U236'],['92238.70c','U238']]
-
-#energy_bins=[1.00E-10,5.00E-10,7.50E-10,0.000000001,1.20E-09,1.50E-09,0.000000002,2.50E-09,0.000000003,0.000000004,0.000000005,7.50E-09,0.00000001,2.53E-08,0.00000003,0.00000004,0.00000005,0.00000006,0.00000007,0.00000008,0.00000009,0.0000001,0.000000125,0.00000015,0.000000175,0.0000002,0.000000225,0.00000025,0.000000275,0.0000003,0.000000325,0.00000035,0.000000375,0.0000004,0.00000045,0.0000005,0.00000055,0.0000006,0.000000625,0.00000065,0.0000007,0.00000075,0.0000008,0.00000085,0.0000009,0.000000925,0.00000095,0.000000975,0.000001,0.00000101,0.00000102,0.00000103,0.00000104,0.00000105,0.00000106,0.00000107,0.00000108,0.00000109,0.0000011,0.00000111,0.00000112,0.00000113,0.00000114,0.00000115,0.000001175,0.0000012,0.000001225,0.00000125,0.0000013,0.00000135,0.0000014,0.00000145,0.0000015,0.00000159,0.00000168,0.00000177,0.00000186,0.00000194,0.000002,0.00000212,0.00000221,0.0000023,0.00000238,0.00000247,0.00000257,0.00000267,0.00000277,0.00000287,0.00000297,0.000003,0.0000031,0.0000032,0.0000035,0.00000373,0.0000041,0.0000047,0.000005,0.0000054,0.000006,0.00000625,0.0000065,0.00000675,0.000006875,0.000007,0.00000715,0.0000081,0.0000091,0.00001,0.0000115,0.0000119,0.0000129,0.0000144,0.000016,0.000017,0.0000185,0.0000194,0.00002,0.0000205,0.0000212,0.00002175,0.0000225,0.000025,0.0000275,0.00003,0.00003125,0.00003175,0.00003325,0.00003375,0.000035,0.0000355,0.000036,0.000037,0.00003713,0.00003727,0.00003763,0.000038,0.0000391,0.0000396,0.000041,0.0000424,0.000044,0.0000452,0.0000483,0.0000506,0.0000534,0.000058,0.000061,0.000063,0.000065,0.0000675,0.000072,0.000076,0.00008,0.0000817,0.00009,0.000097,0.0001012,0.000105,0.000108,0.000113,0.000116,0.0001175,0.000119,0.000122,0.000143,0.00017,0.00018,0.0001877,0.0001885,0.0001915,0.000193,0.000202,0.0002074,0.0002095,0.00022,0.00024,0.000285,0.000305,0.00055,0.00067,0.000683,0.00095,0.00115,0.0015,0.00155,0.0018,0.0022,0.00225,0.0025,0.003,0.00374,0.0039,0.0057,0.00803,0.0095,0.013,0.017,0.02,0.03,0.045,0.05,0.052,0.06,0.073,0.075,0.082,0.085,0.1,0.1283,0.149,0.2,0.27,0.33,0.4,0.42,0.44,0.47,0.492,0.55,0.573,0.6,0.67,0.679,0.75,0.82,0.8611,0.875,0.9,0.92,1.01,1.1,1.2,1.25,1.317,1.356,1.4,1.5,1.85,2.354,2.479,3,4.304,4.8,6.434,8.187,10,12.84,13.84,14.55,15.68,17.33,20]
-# This is the value of the energy bin in MeV
-#These energy bins are the ones used in the covariance matrix used to find the variance due to the cross section
-#energy_bins_temp=[1.00E-5,4.00E-03,1.00E-02,2.53E-02,4.00E-02,5.00E-02,6.00E-02,8.00E-02,1.00E-01,1.50E-01,2.00E-01,2.50E-01,3.25E-01,3.50E-01,3.75E-01,4.50E-01,6.25E-01,1.01E+00,1.08E+00,1.13E+00,5.00E+00,6.25E+00,6.50E+00,6.88E+00,7.00E+00,2.05E+01,2.12E+01,2.18E+01,3.60E+01,3.71E+01,6.50E+01,6.75E+01,1.01E+02,1.05E+02,1.16E+02,1.18E+02,1.88E+02,1.92E+02,2.25E+03,3.74E+03,1.70E+04,2.00E+04,5.00E+04,2.00E+05,2.70E+05,3.30E+05,4.70E+05,6.00E+05,7.50E+05,8.61E+05,1.20E+06,1.50E+06,1.85E+06,3.00E+06,4.30E+06,6.43E+06,2.00E+07]
-#Converts energy bin values to eV
-#energy_bins=[round(a/10**6,12) for a in energy_bins_temp]
-
-
-
+from ERRORR_reader import ERRORR_tools
 
 
 ##### This function creates perturbation strings
@@ -31,10 +12,14 @@ reaction_calls=['rxn=1', 'rxn=2', 'rxn=4', 'rxn=16','rxn=18', 'rxn=102', 'rxn=10
 #template_name is the name of the mcnp file the sensitivity analysis will be used on
 #density_change is the value of percent of macroscopic cross section perturbed. A good value to use is 0.01. This is used for ksen problems, but still should be given an arbitrary value.
 #reactions is a list of reactions that a preturbation is desired. This refers to the variable reaction_calls used created in the input section
-#erg_bins is a list of the energy bin system used for the perturbations. This variable is energy_bins, as seen in the inputs section, for my case.
+#energy_bins is a list of the energy bin system used for the perturbations. This variable is energy_bins, as seen in the inputs section, for my case.
 #run_type is a variable that describes the type of pertuebation cards that will be created. Three options are currently available:'kpert','ksen', and 'pert' 
-def make_pert_cards(template_name,density_change,reactions,run_type):
-    erg_bins=0
+def make_pert_cards(template_name,density_change,reactions,energy_bins,run_type):
+    #This is a working folder for the entire run
+    # It should be cleaned out after runs to maintain drive storage
+    path=os.getcwd()
+    if not os.path.exists(path+'/working_dir'):
+        os.mkdir(path+'/working_dir')
     #opening the mcnp file to read the materials and elements of each material
     template=open(template_name,'r')
     #creating variables to build later/ setting defaults
@@ -133,6 +118,7 @@ def make_pert_cards(template_name,density_change,reactions,run_type):
             in_cells=False
     #####This section creates the new added materials with a perturbation in each isotope. Only used for PERT and KPERT runs.
     list_of_new_materials=[]
+    elements_used=[]
     for x in range(len(list_of_materials)):
         list_temp=''
         element_temp=[]
@@ -145,31 +131,56 @@ def make_pert_cards(template_name,density_change,reactions,run_type):
                 elif j==0 and j==i:
                     list_temp+='m'+str(list_of_materials[x][0])+str(i+1)+'    '+list_of_materials[x][1][j]+' '+str(round(float(list_of_materials[x][2][j])*(1+float(density_change)),9))+'\n'
                     element_temp.append(list_of_materials[x][1][j])
+                    if not( list_of_materials[x][1][j] in elements_used):
+                        elements_used.append(list_of_materials[x][1][j])
                 #Creates the other lines of the materials that do the perturbation on this element
                 elif j!=0 and j==i:
                     list_temp+='       '+list_of_materials[x][1][j]+' '+str(round(float(list_of_materials[x][2][j])*(1+float(density_change)),9))+'\n'
                     element_temp.append(list_of_materials[x][1][j])
+                    if not( list_of_materials[x][1][j] in elements_used):
+                        elements_used.append(list_of_materials[x][1][j])
                 #Creates the other lines of the materials that do not have the perturbation on this element
                 else:
                     list_temp+='       '+list_of_materials[x][1][j]+' '+list_of_materials[x][2][j]+'\n'
-        elements_out.append(element_temp)    
+        elements_out.append(element_temp)
         list_of_new_materials.append(list_temp)
         
-    #####This section pulls all the needed covariance data for specific isotopes  
+    #####This section checks to see if covariance data exists for each isotope mt
+    list_of_jobs=[]
+    x=ERRORR_tools()
+    x.energy_structure=energy_bins
+    x.energy_structure=[round(a*10**6,6) for a in x.energy_structure]
+    temp=len(x.energy_structure)-1
+    zero_matrix=np.zeros((temp,temp))
     covariance_data=[]
-    i=0
-    for mat in elements_out:
-        for element in mat:
-            if i==0:
-                for rxn in reactions:
-                    covariance_data.append([element,rxn,get_cov_mat(element[:-4],int(rxn[4:]))])
-                i+=1
-            else:
-                if not element in covariance_data[0]:
-                    for rxn in reactions:
-                        covariance_data.append([element,rxn,get_cov_mat(element[:-4],int(rxn[4:]))])
+    for element in elements_used:
+        if '.' in element:
+            element_a=element[:-4]
             
-        
+        x.isotope_a=element_a[-3:]
+        x.isotope_z=element_a[:-3]
+        while len(x.isotope_z)<3:
+            x.isotope_z='0'+x.isotope_z
+        i=0
+        with open('element_letters.csv',encoding='utf-8-sig') as file:
+            for row in file:
+                i+=1
+                if i==int(x.isotope_z):
+                    x.isotope_letter=str(row)[:-1]
+                    
+        for rxn in reactions:
+            rxn_num=rxn[4:]
+            x.MT_1=int(rxn_num)
+            x.MT_2=int(rxn_num)
+            print(rxn_num,x.isotope_letter,x.isotope_a)
+            x.get_covariance_matrix()
+            covariance_data.append([element,rxn,[x.covariance_matrix,energy_bins]])
+            if not (x.covariance_matrix==zero_matrix).all():
+                list_of_jobs.append(element+rxn)  
+            
+            
+            
+                
     
     #####This section creates the added MCNP calls that are used to find the sensititvities
     #This section is for creating the kpert cards need for keff sensitivities
@@ -184,17 +195,13 @@ def make_pert_cards(template_name,density_change,reactions,run_type):
                 # Every reaction of interest. Note: The reactions chosen appear for all isotopes even if they do not have that particular reaction. EXAMPlE: If fission reaction is desired for the system with water and uranium, a H-1 fission sensitivity will be calculated, but will return void.
                 for j in range(len(reactions)):
                     temp=[]
-                    for y in covariance_data:
-                        if list_of_materials[x][1][i]==y[0]:
-                            if reactions[j]==y[1]:
-                                erg_bins=y[2][1]
-                    if type(erg_bins)!=list:
+                    if not(list_of_materials[x][1][i]+reactions[j] in list_of_jobs):
                         temp_list_pert.append('No data')
                     else:
                         # a kpert card is need for each energy bin range
                         # cell refers to the cells of interest for the material being perturbed, rho is the perturbed desity value, mat refers to the name of the new material used for perturbation, erg is the energy bin lower and upper bounds for a particular energy bin 
-                        for k in range(len(erg_bins)-1):
-                            pert_string='kpert'+str(k+1)+' cell='+cell_materials[x]+' rho='+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(density_change))-float(list_of_materials[x][2][i]))),9))+' mat='+str(list_of_materials[x][0])+str(i+1)+' '+ reactions[j]+' erg= '+str(erg_bins[k])+' '+str(erg_bins[k+1])+'\n'
+                        for k in range(len(energy_bins)-1):
+                            pert_string='kpert'+str(k+1)+' cell='+cell_materials[x]+' rho='+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(density_change))-float(list_of_materials[x][2][i]))),9))+' mat='+str(list_of_materials[x][0])+str(i+1)+' '+ reactions[j]+' erg= '+str(energy_bins[k])+' '+str(energy_bins[k+1])+'\n'
                             temp.append(pert_string)
                         temp_list_pert.append(temp)
                 temp_list_pert_mat.append(temp_list_pert)    
@@ -210,16 +217,13 @@ def make_pert_cards(template_name,density_change,reactions,run_type):
                 temp_list_pert=[]
                 for j in range(len(reactions)):
                     temp=[]
-                    for y in covariance_data:
-                        if list_of_materials[x][1][i]==y[0]:
-                            if reactions[j]==y[1]:
-                                erg_bins=y[2][1]
-                    if type(erg_bins)!=list:
+                    
+                    if not(list_of_materials[x][1][i]+reactions[j] in list_of_jobs):
                         temp_list_pert.append('No data')
                     else:
                     # the method=2 ensures the first order sensitivities are calculated
-                        for k in range(len(erg_bins)-1):
-                            pert_string='pert'+str(k+1)+':n cell='+cell_materials[x]+' rho='+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(density_change))-float(list_of_materials[x][2][i]))),9))+' mat='+str(list_of_materials[x][0])+str(i+1)+' '+ reactions[j]+' method=2'+' erg= '+str(erg_bins[k])+' '+str(erg_bins[k+1])+'\n'
+                        for k in range(len(energy_bins)-1):
+                            pert_string='pert'+str(k+1)+':n cell='+cell_materials[x]+' rho='+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(density_change))-float(list_of_materials[x][2][i]))),9))+' mat='+str(list_of_materials[x][0])+str(i+1)+' '+ reactions[j]+' method=2'+' erg= '+str(energy_bins[k])+' '+str(energy_bins[k+1])+'\n'
                             temp.append(pert_string)
                         temp_list_pert.append(temp)
                 temp_list_pert_mat.append(temp_list_pert)    
@@ -233,16 +237,12 @@ def make_pert_cards(template_name,density_change,reactions,run_type):
                 temp_list_pert=[]
                 for j in range(len(reactions)):
                     temp=[]
-                    for y in covariance_data:
-                        if list_of_materials[x][1][i]==y[0]:
-                            if reactions[j]==y[1]:
-                                erg_bins=y[2][1]
-                    if type(erg_bins)!=list:
+                    if not(list_of_materials[x][1][i]+reactions[j] in list_of_jobs):
                         temp_list_pert.append('No data')
                     #XS denotes cross section sensitiviites, iso is for the isotope name (1001 for H-1)
                     else:
-                        for k in range(len(erg_bins)-1):
-                            pert_string='ksen'+str(k+1)+' XS'+' ISO= ' +str(list_of_materials[x][1][i])+' '+'cell='+cell_materials[x]+' '+str(reactions[j]) +' erg= '+str(erg_bins[k])+' '+str(erg_bins[k+1])+'\n'
+                        for k in range(len(energy_bins)-1):
+                            pert_string='ksen'+str(k+1)+' XS'+' ISO= ' +str(list_of_materials[x][1][i])+' '+'cell='+cell_materials[x]+' '+str(reactions[j]) +' erg= '+str(energy_bins[k])+' '+str(energy_bins[k+1])+'\n'
                             temp.append(pert_string)
                         temp_list_pert.append(temp)
                 temp_list_pert_mat.append(temp_list_pert)    
@@ -304,6 +304,7 @@ def submit_to_cluster(job_name):
             print('Job successfully submitted')
     template.close()
     os.remove('cluster_submissions.txt')
+
     
     
     
@@ -325,6 +326,7 @@ def check_cluster_job(job_name):
     else:
         #This shows the job is finished
         print('file found')
+        time.sleep(1)
         #removes job_done.dat and cluster_submissions files
         # this will remove the _done.dat file if that is desired. Recommend that you comment out when debugging and uncomment once
         #finished with your coding changes
@@ -1220,8 +1222,11 @@ def submit_pert(reaction_list,pert_calls,new_materials,names,element_list,templa
                         if x[1]==react:
                             energies=x[2][1]
                             cov_matrix=x[2][0]
-                # using the read function to pull the variance for the element and reaction
-                vect.append(read_pert_code(out_names[i][j][k],energies,element_cov,react,density_change,cov_matrix))
+                if pert_calls[i][j][k]=='No data':
+                    vect.append([np.zeros((1,1))])
+                else:
+                    # using the read function to pull the variance for the element and reaction
+                    vect.append(read_pert_code(out_names[i][j][k],energies,element_cov,react,density_change,cov_matrix))
                 # this waits for the vector to be the size of the reaction list. We run all reactions for all elements
                 if m==len(reaction_list):
                     data[i].append(vect)
@@ -1300,29 +1305,45 @@ def submit_pert(reaction_list,pert_calls,new_materials,names,element_list,templa
 # table- the list of non zero dictionaries of variances with given material, element, and reaction
 # full_table- the list of all dictionaries of variances with given material, element, and reaction
 
-
-time_1=time.time()
-
-
-
-########### calling the functions properly    
-#### making ksen example
-# 'base_k_temp.txt- the MCNP input that the ksen analysis is being done on
-# 0.01- The value of perturbation used, not used for 'ksen' card, but required for other methods
-# reaction_calls- see inputs section
-# energy_bins- see inputs section
-# 'ksen'- signifies a ksen run of sensitivities
-[calls,material_update,element_list,covariance]=make_pert_cards('base_k_temp.txt',0.01,reaction_calls,'ksen')
-
-# calls,material_update-output from make_pert_cards
-# reaction_calls- see inputs section
-# reaction_names- see inputs section
-# elements_list- see inputs section
-# 'base_k_temp.txt'- the MCNP input used for analysis
-# energy_bins- see inputs section
-# False- signifies that jobs are not submitted to cluster
-table_output,full=submit_ksen(reaction_calls,calls,material_update,reaction_names,element_list,'base_k_temp.txt',covariance,True)
-print('done')
-script_file = open('info_time.txt', 'w')
-script_file.write(str(time.time()-time_1)+' Seconds needed to run')
-script_file.close()
+if __name__ =='__main__':
+    time_1=time.time()
+    #########Inputs/setting print text
+    # This is the list of reactions as they are named
+    #list_of_rxn=['rxn 1', 'rxn 2', 'rxn 4', 'rxn 18', 'rxn 102' ]
+    # This is the name given to each reaction that is called. This list should mirror the following list
+    reaction_names=['Total', 'Elastic', 'Total inelastic','(n_2n)', 'Total Fission','(n_gamma)','(n_p)']
+    # This is a list of the reactions called in a format MCNP can read. The number is the MT number of the reaction desired.
+    reaction_calls=['rxn=1', 'rxn=2', 'rxn=4', 'rxn=16','rxn=18', 'rxn=102', 'rxn=103']
+    
+    #This list is a set of naming pairs for the elements present elements found in MCNP material cards and a common terminology for the element
+    #material_names=[['1001.70c','H1'],['6000.70c','C'],['8016.70c','O16'],['11023.70c','Na23'],['13027.70c','Al27'],['14028.70c','Si28'],['14029.70c','Si29'],['14030.70c','Si30'],['20040.70c','Ca40'],['20042.70c','Ca42'],['20043.70c','Ca43'],['20044.70c','Ca44'],['20040.76c','Ca46'],['20048.70c','Ca48'],['26054.70c','Fe54'],['26056.70c','Fe56'],['26057.70c','Fe57'],['26058.70c','Fe58'],['92232.70c','U232'],['92234.70c','U234'],['92235.70c','U235'],['92236.70c','U236'],['92238.70c','U238']]
+    
+    #energy_bins=[1.00E-10,5.00E-10,7.50E-10,0.000000001,1.20E-09,1.50E-09,0.000000002,2.50E-09,0.000000003,0.000000004,0.000000005,7.50E-09,0.00000001,2.53E-08,0.00000003,0.00000004,0.00000005,0.00000006,0.00000007,0.00000008,0.00000009,0.0000001,0.000000125,0.00000015,0.000000175,0.0000002,0.000000225,0.00000025,0.000000275,0.0000003,0.000000325,0.00000035,0.000000375,0.0000004,0.00000045,0.0000005,0.00000055,0.0000006,0.000000625,0.00000065,0.0000007,0.00000075,0.0000008,0.00000085,0.0000009,0.000000925,0.00000095,0.000000975,0.000001,0.00000101,0.00000102,0.00000103,0.00000104,0.00000105,0.00000106,0.00000107,0.00000108,0.00000109,0.0000011,0.00000111,0.00000112,0.00000113,0.00000114,0.00000115,0.000001175,0.0000012,0.000001225,0.00000125,0.0000013,0.00000135,0.0000014,0.00000145,0.0000015,0.00000159,0.00000168,0.00000177,0.00000186,0.00000194,0.000002,0.00000212,0.00000221,0.0000023,0.00000238,0.00000247,0.00000257,0.00000267,0.00000277,0.00000287,0.00000297,0.000003,0.0000031,0.0000032,0.0000035,0.00000373,0.0000041,0.0000047,0.000005,0.0000054,0.000006,0.00000625,0.0000065,0.00000675,0.000006875,0.000007,0.00000715,0.0000081,0.0000091,0.00001,0.0000115,0.0000119,0.0000129,0.0000144,0.000016,0.000017,0.0000185,0.0000194,0.00002,0.0000205,0.0000212,0.00002175,0.0000225,0.000025,0.0000275,0.00003,0.00003125,0.00003175,0.00003325,0.00003375,0.000035,0.0000355,0.000036,0.000037,0.00003713,0.00003727,0.00003763,0.000038,0.0000391,0.0000396,0.000041,0.0000424,0.000044,0.0000452,0.0000483,0.0000506,0.0000534,0.000058,0.000061,0.000063,0.000065,0.0000675,0.000072,0.000076,0.00008,0.0000817,0.00009,0.000097,0.0001012,0.000105,0.000108,0.000113,0.000116,0.0001175,0.000119,0.000122,0.000143,0.00017,0.00018,0.0001877,0.0001885,0.0001915,0.000193,0.000202,0.0002074,0.0002095,0.00022,0.00024,0.000285,0.000305,0.00055,0.00067,0.000683,0.00095,0.00115,0.0015,0.00155,0.0018,0.0022,0.00225,0.0025,0.003,0.00374,0.0039,0.0057,0.00803,0.0095,0.013,0.017,0.02,0.03,0.045,0.05,0.052,0.06,0.073,0.075,0.082,0.085,0.1,0.1283,0.149,0.2,0.27,0.33,0.4,0.42,0.44,0.47,0.492,0.55,0.573,0.6,0.67,0.679,0.75,0.82,0.8611,0.875,0.9,0.92,1.01,1.1,1.2,1.25,1.317,1.356,1.4,1.5,1.85,2.354,2.479,3,4.304,4.8,6.434,8.187,10,12.84,13.84,14.55,15.68,17.33,20]
+    # This is the value of the energy bin in MeV
+    #These energy bins are the ones used in the covariance matrix used to find the variance due to the cross section
+    energy_bins_temp=[1.00E-5,4.00E-03,1.00E-02,2.53E-02,4.00E-02,5.00E-02,6.00E-02,8.00E-02,1.00E-01,1.50E-01,2.00E-01,2.50E-01,3.25E-01,3.50E-01,3.75E-01,4.50E-01,6.25E-01,1.01E+00,1.08E+00,1.13E+00,5.00E+00,6.25E+00,6.50E+00,6.88E+00,7.00E+00,2.05E+01,2.12E+01,2.18E+01,3.60E+01,3.71E+01,6.50E+01,6.75E+01,1.01E+02,1.05E+02,1.16E+02,1.18E+02,1.88E+02,1.92E+02,2.25E+03,3.74E+03,1.70E+04,2.00E+04,5.00E+04,2.00E+05,2.70E+05,3.30E+05,4.70E+05,6.00E+05,7.50E+05,8.61E+05,1.20E+06,1.50E+06,1.85E+06,3.00E+06,4.30E+06,6.43E+06,2.00E+07]
+    #Converts energy bin values to eV
+    energy_bins=[round(a/10**6,12) for a in energy_bins_temp]
+    
+    ########### calling the functions properly    
+    #### making ksen example
+    # 'base_k_temp.txt- the MCNP input that the ksen analysis is being done on
+    # 0.01- The value of perturbation used, not used for 'ksen' card, but required for other methods
+    # reaction_calls- see inputs section
+    # energy_bins- see inputs section
+    # 'ksen'- signifies a ksen run of sensitivities
+    [calls,material_update,element_list,covariance]=make_pert_cards('base_sdef_temp.txt',0.01,reaction_calls,energy_bins,'pert')
+    
+    # calls,material_update-output from make_pert_cards
+    # reaction_calls- see inputs section
+    # reaction_names- see inputs section
+    # elements_list- see inputs section
+    # 'base_k_temp.txt'- the MCNP input used for analysis
+    # energy_bins- see inputs section
+    # False- signifies that jobs are not submitted to cluster
+    table_output,full=submit_pert(reaction_calls,calls,material_update,reaction_names,element_list,'base_sdef_temp.txt',covariance,0.01,True)
+    print('done')
+    script_file = open('info_time.txt', 'w')
+    script_file.write(str(time.time()-time_1)+' Seconds needed to run')
+    script_file.close()
+        
