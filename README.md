@@ -4,7 +4,7 @@ TOFFEE is a python script that automates cross-section uncertainty analysis usin
 # How to install and use TOFFEE
 1. Download TOFFEE.py, element_letters.csv, ERRORR_reader, and njoy_template.txt into a folder.
 2. The programs `submit_to_cluster`(line 265 in TOFFEE.py) and `submit_njoy_run`(line 114 in ERRORR_reader.py) must be altered to submit the mcnp and njoy runs for your specific computation machine.
-3. Alter the ENDF folder name (`self.endf_folder`)in line 23 of ERRORR_reader to the ENDF6 formated neutron cross section library of your choise
+3. Alter `self.endf_folder` in line 23 of ERRORR_reader to the ENDF6 formated neutron cross section library of your choise
 4. Add your MCNP file for to the folder.
 5. Change the name of the file "base_sdef_temp.txt" to the name of your MCNP file in lines 1334 and 1343.
 6. If your MCNP file is source driven, the script is ready to run.
