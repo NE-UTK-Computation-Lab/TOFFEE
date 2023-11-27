@@ -1,0 +1,23 @@
+#!/bin/tcsh
+#SBATCH --job-name=batch1
+#SBATCH --output=/lustre/scratch4/yellow/arwilliams/DIR/batch1_o
+#SBATCH --nodes=4
+#SBATCH --qos=standard
+#SBATCH -L scratch4@slurmdb
+#SBATCH --time=4:30:00
+#SBATCH --begin=2021-06-05T21:00
+
+  set CODEDIR = "/users/arwilliams/mcnp_tools/mcnp6.3_mod.mpi"
+  set PROBDIR = "/lustre/scratch4/yellow/arwilliams"
+  cd working_dir
+  set MAINPATH = `pwd`
+  cd $PROBDIR
+  mkdir job.$SLURM_JOBID
+  cd job.$SLURM_JOBID
+  cp $MAINPATH/perturbed_mcnp_%%num%%.inp .
+  module purge
+  module use /usr/projects/mcnp/modules
+  module load mcnp6/6.3
+  setenv DATAPATH /usr/projects/data/nuclear/mc/type1/
+  mcnpexe -np 144 I=perturbed_mcnp_%%num%%.inp O=perturbed_mcnp_%%num%%.out
+  cp perturbed_mcnp_%%num%%.out $MAINPATH

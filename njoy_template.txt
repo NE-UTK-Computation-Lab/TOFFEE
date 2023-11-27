@@ -1,26 +1,37 @@
-#!/bin/bash 
-#PBS -V 
-#PBS -q fill
-#PBS -l nodes=1:ppn=8 
-hostname 
-cd $PBS_O_WORKDIR
-echo 'NJOY Test Problem 5'
-echo 'getting endf tape 511'
-echo 'running njoy...'
-cat>input <<EOF
 moder
-30 -31
+  20 -30 /
+reconr
+  -30 -31 /
+  'automated processing using ndvv.njoy.process see *.log files' /
+  %%isotope_endf_value%% 0 0 /
+  0.001 0.0 0.01 5.0000000000000004e-08 /
+  0 /
+broadr
+  -30 -31 -32 /
+  %%isotope_endf_value%% 1 0 0 0.0 /
+  0.001 1000000.0 0.01 5.0000000000000004e-08 /
+  293.6
+  0 /
+heatr
+  -30 -32 -33 /
+  %%isotope_endf_value%% 3 0 0 0 2 /
+  442
+  443
+  444
+gaspr
+  -30 -33 -34 /
+thermr
+  0 -34 -35 /
+  0 %%isotope_endf_value%% 16 1 1 0 0 1 221 2 /
+  293.6 /
+  0.001 10.0 /
 moder
--31 -32
+  -35 21/
 errorr
--31 -32 0 33/
-%%isotope_endf_value%% 1 2 1/
-0 0
-0 33/
+20 21 0 33/
+%%isotope_endf_value%% 1 9 0 1/
+0 293.6 /
+0 33 0/
 %%energy_bins_length%%/
 %%energy_bins%%/
 stop
-EOF
-/opt/NJOY21/bin/njoy21 <input >output
-echo 'saving output and plot files'
-
