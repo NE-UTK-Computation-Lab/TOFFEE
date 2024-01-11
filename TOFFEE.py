@@ -260,10 +260,10 @@ class TOFFEE_class:
     
     
     ##### This function converts mass fractions into atomic fractions
-    def convert_material_form(self,list_of_materials):
+def convert_material_form(self,list_of_materials):
         new_list=[]
-
         for material in list_of_materials:
+            print(material)
             if float(material[2][0])>0:
                 new_list.append(material)
                 continue
@@ -271,13 +271,15 @@ class TOFFEE_class:
             temp_list=[]
             for i in range(len(material[1])):
                 materialid=material[1][i]
-                
+                print(materialid)
                 if '.' in material[1][i]:
                     materialid=material[1][i][:-4]
-                    
+                print(materialid)    
                 temp=[materialid]
                 
-                A=float(material[1][i][-3:])
+                A=float(materialid[-3:])
+                if materialid == '6000':
+                    A=12.0
                 
                 awt= -1*float(material[2][i])/A
                 
@@ -298,7 +300,9 @@ class TOFFEE_class:
                 if '.' in material[1][i]:
                     materialid=material[1][i][:-4]
                     
-                A=float(material[1][i][-3:])
+                A=float(materialid[-3:])
+                if materialid == '6000':
+                    A=12.0
                 
                 eff_A+=A*material[2][i]
                 
