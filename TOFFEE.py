@@ -189,10 +189,10 @@ class TOFFEE_class:
                 for j in range(len(list_of_materials[x][1])):
                     #Creates the first line of the materials that do not have the perturbation on this element
                     if j == 0 and j != i:
-                        list_temp+= 'm'+str(list_of_materials[x][0])+str(i+1)+'    '+list_of_materials[x][1][j] + self.n_lib +' '+list_of_materials[x][2][j]+'\n'
+                        list_temp+= 'm'+str(list_of_materials[x][0])+'000'+str(i+1)+'    '+list_of_materials[x][1][j] + self.n_lib +' '+list_of_materials[x][2][j]+'\n'
                     #Creates the first line of the materials that do have the perturbation on this element
                     elif j == 0 and j == i:
-                        list_temp+= 'm'+str(list_of_materials[x][0])+str(i+1)+'    '+list_of_materials[x][1][j] + self.n_lib +' '+str(round(float(list_of_materials[x][2][j])*(1+float(self.density_change)),9))+'\n'
+                        list_temp+= 'm'+str(list_of_materials[x][0])+'000'+str(i+1)+'    '+list_of_materials[x][1][j] + self.n_lib +' '+str(round(float(list_of_materials[x][2][j])*(1+float(self.density_change)),9))+'\n'
                         element_temp.append(list_of_materials[x][1][j]+ self.n_lib )
                         if not( list_of_materials[x][1][j]+ self.n_lib  in elements_used):
                             elements_used.append(list_of_materials[x][1][j]+ self.n_lib )
