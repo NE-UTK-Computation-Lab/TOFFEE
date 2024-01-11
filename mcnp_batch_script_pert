@@ -1,7 +1,10 @@
 #!/bin/bash
-#PBS -q fill
-#PBS -l nodes=8
+#PBS -V
+#PBS -q corei7
+#PBS -l nodes=1:ppn=8
+
+hostname
+module load MCNP6
 
 cd $PBS_O_WORKDIR
-module load mcnp6/6.3
 mcnp6 tasks 8 I=perturbed_mcnp_%%num%%.inp O=perturbed_mcnp_%%num%%.out
