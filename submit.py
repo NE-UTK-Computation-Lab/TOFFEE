@@ -18,7 +18,7 @@ main.run_mcnp = False
     #False
     
 # Name of your mcnp input file
-main.mcnp_file_name = 'jezebel.inp'
+main.mcnp_file_name = 'ksen_test.inp'
 
 # Your desired energy group structure
 #SCALE 56 group

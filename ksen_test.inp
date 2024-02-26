@@ -1,0 +1,23 @@
+Pu239 Jezebel 17,065.5 g Pu-alloy (4.5 at% 240Pu, 1.02 wt% Ga)
+1  94   0.0402901     -1    imp:n=1
+2   0                  1    imp:n=0
+
+1    so     6.39061
+
+mode     n
+rand gen=2 seed=2901000001
+prdmp j 500
+kcode 2400000 1.0 50 1050
+totnu
+sdef pos=0. 0. 0. rad=d1 erg=d2
+si1 0.  6.39061
+sp1 -21 2
+sp2  -3  0.966  2.842
+c Materials
+m94   94239.00c 3.7047E-02
+      94240.00c 1.7512E-03
+      94241.00c 1.1674E-04
+      31069.00c 8.2663E-04
+      31071.00c 5.4857E-04
+c End Materials
+c Pu239 Jezebel 17,065.5 g Pu-al

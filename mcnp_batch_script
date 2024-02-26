@@ -4,7 +4,8 @@
 #PBS -l nodes=1:ppn=8
 
 hostname
-module load MCNP6
+module load MCNP6/3.0
 
 cd $PBS_O_WORKDIR
-mcnp6 TASKS 8 I=perturbed_mcnp.inp O=perturbed_mcnp.out
+mcnp6 TASKS 8 I=perturbed_mcnp.inp O=perturbed_mcnp.out R=/tmp/run
+rm /tmp/run

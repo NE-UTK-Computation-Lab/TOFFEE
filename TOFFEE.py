@@ -174,7 +174,6 @@ class TOFFEE_class:
             if not cell_materials_check[i]:
                 del list_of_materials[i]
                 del cell_materials[i]
-
         ##### This converts mass stuctured materials to atomic stuctures
         list_of_materials=self.convert_material_form(list_of_materials)
         
@@ -192,13 +191,13 @@ class TOFFEE_class:
                         list_temp+= 'm'+str(list_of_materials[x][0])+'000'+str(i+1)+'    '+list_of_materials[x][1][j] + self.n_lib +' '+list_of_materials[x][2][j]+'\n'
                     #Creates the first line of the materials that do have the perturbation on this element
                     elif j == 0 and j == i:
-                        list_temp+= 'm'+str(list_of_materials[x][0])+'000'+str(i+1)+'    '+list_of_materials[x][1][j] + self.n_lib +' '+str(round(float(list_of_materials[x][2][j])*(1+float(self.density_change)),9))+'\n'
+                        list_temp+= 'm'+str(list_of_materials[x][0])+'000'+str(i+1)+'    '+list_of_materials[x][1][j] + self.n_lib +' '+str(round(float(list_of_materials[x][2][j])*(1+float(self.density_change)),11))+'\n'
                         element_temp.append(list_of_materials[x][1][j]+ self.n_lib )
                         if not( list_of_materials[x][1][j]+ self.n_lib  in elements_used):
                             elements_used.append(list_of_materials[x][1][j]+ self.n_lib )
                     #Creates the other lines of the materials that do the perturbation on this element
                     elif j!=0 and j == i:
-                        list_temp+= '       '+list_of_materials[x][1][j]+ self.n_lib +' '+str(round(float(list_of_materials[x][2][j])*(1+float(self.density_change)),9))+'\n'
+                        list_temp+= '       '+list_of_materials[x][1][j]+ self.n_lib +' '+str(round(float(list_of_materials[x][2][j])*(1+float(self.density_change)),11))+'\n'
                         element_temp.append(list_of_materials[x][1][j]+ self.n_lib )
                         if not( list_of_materials[x][1][j]+ self.n_lib  in elements_used):
                             elements_used.append(list_of_materials[x][1][j]+ self.n_lib )
@@ -221,7 +220,7 @@ class TOFFEE_class:
                     for j in range(len(self.reactions_to_evaluate)):
                         temp = []
                         for k in range(len(self.energy_bin_structure)-1):
-                            pert_string = 'pert'+str(k+1)+':n cell = '+cell_materials[x]+' rho = '+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(self.density_change))-float(list_of_materials[x][2][i]))),9))+' mat = '+str(list_of_materials[x][0])+str(i+1)+' '+ self.reactions_to_evaluate[j]+' method = 2'+' erg = '+str(self.energy_bin_structure[k])+' '+str(self.energy_bin_structure[k+1])+'\n'
+                            pert_string = 'pert'+str(k+1)+':n cell = '+cell_materials[x]+' rho = '+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(self.density_change))-float(list_of_materials[x][2][i]))),9))+' mat = '+str(list_of_materials[x][0])+'000'+str(i+1)+' '+ self.reactions_to_evaluate[j]+' method = 2'+' erg = '+str(self.energy_bin_structure[k])+' '+str(self.energy_bin_structure[k+1])+'\n'
                             temp.append(pert_string)
                         temp_list_pert.append(temp)
                     temp_list_pert_mat.append(temp_list_pert)    
@@ -260,10 +259,9 @@ class TOFFEE_class:
     
     
     ##### This function converts mass fractions into atomic fractions
-def convert_material_form(self,list_of_materials):
+    def convert_material_form(self,list_of_materials):
         new_list=[]
         for material in list_of_materials:
-            print(material)
             if float(material[2][0])>0:
                 new_list.append(material)
                 continue
@@ -271,10 +269,8 @@ def convert_material_form(self,list_of_materials):
             temp_list=[]
             for i in range(len(material[1])):
                 materialid=material[1][i]
-                print(materialid)
                 if '.' in material[1][i]:
-                    materialid=material[1][i][:-4]
-                print(materialid)    
+                    materialid=material[1][i][:-4]    
                 temp=[materialid]
                 
                 A=float(materialid[-3:])
@@ -371,6 +367,7 @@ def convert_material_form(self,list_of_materials):
             
             material_lines = lines_to_append
             old_nucl = 0
+            old_mat = 0
             name_string_old=''
             self.job_names = []
             self.out_names = []
@@ -380,8 +377,9 @@ def convert_material_form(self,list_of_materials):
                 curr_nucl=int(string[1])
                 name_string = ''.join(string[:2])
                 string=''.join(string)
+                curr_mat=int(string[0])
                                 
-                if old_nucl != curr_nucl:
+                if old_nucl != curr_nucl or curr_mat != old_mat:
                     self.job_name='perturbed_mcnp_'+name_string_old
                     shutil.copyfile(self.mcnp_file_name,'working_dir/'+self.job_name+'.inp')
                     file = open('working_dir/'+self.job_name+'.inp','a')
@@ -398,6 +396,7 @@ def convert_material_form(self,list_of_materials):
                     lines_to_append+=(temp_text)
                     
                 old_nucl = curr_nucl
+                old_mat = curr_mat
                 name_string_old = name_string
                     
             
@@ -436,7 +435,7 @@ def convert_material_form(self,list_of_materials):
                 #waiting to verify the cluster knows the file is no longer present
                 time.sleep(5)
                 
-            # This line submits the job via qsub command
+            # This line fs the job via qsub command
             # the part of the string '>> cluster_submissions.txt' will create an output file with the text printed to the command window
             os.system('qsub mcnp_batch_script >> cluster_submissions.txt')
             time.sleep(5)
@@ -590,9 +589,11 @@ def convert_material_form(self,list_of_materials):
         #Initializing temp files
         tally_base = [0,0]
         self.output_file_name='working_dir/perturbed_mcnp_'+str(i)+str(j)+'.out'
+        print(self.output_file_name)
         #creates a variable for the output file text
         file_output = open(self.output_file_name,'r')
         in_tally  =  False
+        in_tally_1  =  False
         in_data  =  False
         flux = 0
         std = 0
@@ -600,15 +601,22 @@ def convert_material_form(self,list_of_materials):
         ############ This section should be highlighted as the area to read the MCNP tally   
         for line in file_output:
             #looks for the first f14 tally of the MCNP output file
-            if '1tally        1'  in line:
+            if '1tally        4'  in line:
                 in_tally  =  True
+                count=1
                 
             if in_tally:
+                count+=1
                 # cell 1 is the cell the f14 tally is loctaed in
                 #this line appears directly above the data line
-                if 'surface  1' in line:
+                if count==15:
+                    in_tally=False
+                if 'cell  500' in line:
+                    in_tally_1 = True
+                    continue   
+                if 'bin:   1.00000E-24' in line and in_tally_1:
                     in_data = True
-                    continue         
+                    continue            
                 if in_data:
                     in_tally = False
                     line_split = line.split()
@@ -620,6 +628,7 @@ def convert_material_form(self,list_of_materials):
                     
         file_output.close()
         in_tally = False
+        in_tally_1 = False
         in_data = False
         tally_base[0] = flux
         tally_base[1] = std
@@ -632,7 +641,7 @@ def convert_material_form(self,list_of_materials):
         
         file_output.close()
         file_output = open(self.output_file_name,'r')
-            
+        
         # This sweeps through the energy bins
         for j in range(len(self.energy_bin_structure)-1):
             
@@ -640,10 +649,13 @@ def convert_material_form(self,list_of_materials):
                 # This is the call that denotes the current perturbation related to the current energy bin
                 if 'the following output gives the predicted change in a tally for perturbation' in line and ' '+str(j+1)+card_string+'.' in line:
                     in_tally =  True
-                    continue     
+                    continue
+                    
+                if '1tally        4'  in line:
+                    in_tally_1  =  True         
                 # This denotes the cell we are taking the tally in. This could change based on the type of tally chosen to inspect
-                if in_tally == True:
-                    if 'surface  1' in line:
+                if in_tally_1 == True:
+                    if 'bin:   1.00000E-24' in line:
                         in_data = True
                         continue
                     #This line does that math required to calculate the sensitivity value
@@ -661,6 +673,7 @@ def convert_material_form(self,list_of_materials):
         file_output.close()
         # Converts the sensitivity vector from a list to an array in order to matrix multiply
         self.sensitivity_vector = np.array(vector)
+        #print(sum(self.sensitivity_vector))
         
 
     ##### This function conducts the sandwich rule using the sensitivities and covariance matrix
@@ -896,13 +909,20 @@ def convert_material_form(self,list_of_materials):
         with open(self.output_file_name) as file:
             for line in file.readlines():
                 
-                if '1tally        1'  in line:
+                if '1tally        4'  in line:
                     in_tally = True
+                    count=1
                 
                 if in_tally:
-                    if 'surface  1' in line:
+                    count+=1
+                    if count==15:
+                        in_tally=False
+                    if 'cell  500' in line:
+                        in_tally_1 = True
+                        continue   
+                    if 'bin:   1.00000E-24' in line and in_tally_1:
                         in_data = True
-                        continue  
+                        continue   
                     if in_data:
                         line_split = line.split()
                         self.tally = float(line_split[0])
@@ -991,9 +1011,9 @@ def convert_material_form(self,list_of_materials):
                 
                 caxes = axes.matshow(cov)
                 axes.xaxis.set_ticks_position('bottom')
+                plt.gca().invert_yaxis()
                 figure.colorbar(caxes)
                 plt.title(nuc+' '+rec+' '+rec_2+' covariance')
-                plt.gca().invert_yaxis()
                 plt.savefig('covariance_plots/'+nuc+'_'+rec+'_'+rec_2+'.png')
                 plt.tight_layout()
                 plt.close()
@@ -1026,7 +1046,7 @@ def convert_material_form(self,list_of_materials):
                 list_of_names.append(nuc+' '+rec1+' '+rec2)
             
             num+=1
-            if num==5:
+            if num==3:
                 break
         
         rng=np.linspace(1,num,num) 
