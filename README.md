@@ -1,6 +1,8 @@
 # TOol For Fast Error Estimation (TOFFEE)
 TOFFEE is a Python3 tool that automates cross-section uncertainty analysis using the tool available in MCNP6.3 and NJOY. The program utilizes the PERT and KSEN methods to generate sensitivities, uses [NJOY21](https://github.com/njoy/NJOY21) to generate covariance data, and uses NUMPY to do the sandwich rule to propogate uncertainites.
 
+TOFFEE was developed in Python version 3.6.8. The packages that need to be present within the Python enviroment are: os, time, numpy, shutil, pickle, matplotlib, and linechache.
+
 # How to install and test TOFFEE
 1. Download and extract TOFFEE_package.zip into a folder.
 2. Download the ENDF6 format nuclear data library that you will be using in your MCNP evaluation. This code was designed using [ENDF-B/VIII.0](https://www.nndc.bnl.gov/endf-b8.0/download.html) data.This library should be within a folder that is named `endf_neutron_libraries` by default. An example for hydrogen-1 `endf_neutron_libraries/n-001_H_001.endf` which must be within the folder you extract the TOFFEE_package.  
