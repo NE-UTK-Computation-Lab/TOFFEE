@@ -24,12 +24,12 @@ with open(name,'rb') as file:
 
 main.print_total_variance()
 
-#main.plot_sensitivity('dU')
+main.plot_sensitivity('dU')
 ### options:
     #'dU' - per unit lethargy 
     #'dE' - per MeV
 
-#main.plot_matrix()
+main.plot_matrix()
 
 
 main.plot_variance('std')
