@@ -1,0 +1,14 @@
+C-12 PERT test 
+1   6   0.085238      -1    imp:n=1
+2   0                  1    imp:n=0
+
+1    so     7.0
+
+mode     n
+rand gen=2 seed=2901000001
+nps 1e6
+sdef pos=0. 0. 0. erg = 14.1
+c Materials
+m6    6012.00c 0.085238 
+c End Materials
+f4:n   1

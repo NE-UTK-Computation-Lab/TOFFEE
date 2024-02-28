@@ -18,7 +18,7 @@ main.run_mcnp = False
     #False
     
 # Name of your mcnp input file
-main.mcnp_file_name = 'ksen_test.inp'
+main.mcnp_file_name = 'pert_test.inp'
 
 # Your desired energy group structure
 #SCALE 56 group
@@ -38,6 +38,19 @@ main.reaction_names = ['elastic', 'inelastic','n,2n', 'fission','n,gamma','n,p',
 
 # Percent change in density of the nuclides being perturbed (ONLY for PERT method)
 main.density_change = 1.0
+
+# Name of tally that the UQ will be made on
+main.tally_identifier = '1tally        4' 
+
+# Name of tally location (cell, surface, etc) that the UQ will be made on
+main.location_identifier = 'cell  1' 
+
+# If a multiplier is used on the tally, set this to True
+main.tally_multiplier = False
+
+# Multiplier bin for the multiplier
+main.multiplier_identifier = 'multiplier bin:   1.00000E-24'
+
 
 
 

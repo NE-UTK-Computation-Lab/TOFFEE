@@ -24,6 +24,10 @@ class TOFFEE_class:
         self.reaction_names = ['total', 'elastic', 'inelastic','n,2n', 'fission','n,gamma','n,p', 'n,d', 'n,t', 'n,3he', 'n,alpha']
         # percent change in density of the nuclides being perturbed
         self.density_change = 0.01
+        self.tally_identifier = '1tally        4' 
+        self.location_identifier = 'cell  1' 
+        self.multiplier_identifier = 'multiplier bin:   1.00000E-24'
+        self.tally_multiplier = False
 
     
         ### These are things we keep so the code doesn't need to execute them multiple times
@@ -601,7 +605,7 @@ class TOFFEE_class:
         ############ This section should be highlighted as the area to read the MCNP tally   
         for line in file_output:
             #looks for the first f14 tally of the MCNP output file
-            if '1tally        4'  in line:
+            if self.tally_identifier  in line:
                 in_tally  =  True
                 count=1
                 
@@ -611,10 +615,14 @@ class TOFFEE_class:
                 #this line appears directly above the data line
                 if count==15:
                     in_tally=False
-                if 'cell  500' in line:
-                    in_tally_1 = True
-                    continue   
-                if 'bin:   1.00000E-24' in line and in_tally_1:
+                if self.location_identifier in line:
+                    if self.tally_multiplier:
+                        in_tally_1 = True
+                        continue
+                    else:
+                        in_data = True 
+                        continue
+                if self.multiplier_identifier in line and in_tally_1:
                     in_data = True
                     continue            
                 if in_data:
@@ -651,13 +659,18 @@ class TOFFEE_class:
                     in_tally =  True
                     continue
                     
-                if '1tally        4'  in line:
+                if self.tally_identifier  in line:
                     in_tally_1  =  True         
                 # This denotes the cell we are taking the tally in. This could change based on the type of tally chosen to inspect
                 if in_tally_1 == True:
-                    if 'bin:   1.00000E-24' in line:
-                        in_data = True
-                        continue
+                    if self.tally_multiplier:
+                        if self.multiplier_identifier in line:
+                            in_data = True
+                            continue
+                    else:
+                         if self.location_identifier in line:
+                            in_data = True
+                            continue      
                     #This line does that math required to calculate the sensitivity value
                     if in_data == True:
                         line_split = line.split()
@@ -889,7 +902,7 @@ class TOFFEE_class:
                     file.write(f"Covariance for the nuclide {d['nuclide']} for reactions {d['reaction 1']} x {d['reaction 2']} is: {2*d['variance']}\n")
                     if not d['reaction 1'] == 'total':
                         tot+= 2*d['variance']
-            file.write(f"Result: {self.tally} \u00B1 {np.sqrt(tot)}")
+            file.write(f"Result: {self.tally} \u00B1 {np.sqrt(tot)*self.tally}")
             
         self.total_variance=tot
        
@@ -909,7 +922,7 @@ class TOFFEE_class:
         with open(self.output_file_name) as file:
             for line in file.readlines():
                 
-                if '1tally        4'  in line:
+                if self.tally_identifier  in line:
                     in_tally = True
                     count=1
                 
@@ -917,10 +930,14 @@ class TOFFEE_class:
                     count+=1
                     if count==15:
                         in_tally=False
-                    if 'cell  500' in line:
-                        in_tally_1 = True
-                        continue   
-                    if 'bin:   1.00000E-24' in line and in_tally_1:
+                    if self.location_identifier in line:
+                        if self.tally_multiplier:
+                            in_tally_1 = True
+                            continue   
+                        else:
+                            in_data = True
+                            continue   
+                    if self.multiplier_identifier in line and in_tally_1:
                         in_data = True
                         continue   
                     if in_data:
