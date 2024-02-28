@@ -1,5 +1,5 @@
 # TOol For Fast Error Estimation (TOFFEE)
-TOFFEE is a Python3 tool that automates cross-section uncertainty analysis using the tool available in MCNP6.3 and NJOY. The program utilizes the PERT and KSEN methods to generate sensitivities, uses NJOY2021 to generate covariance data, and uses NUMPY to do the sandwich rule to propogate uncertainites.
+TOFFEE is a Python3 tool that automates cross-section uncertainty analysis using the tool available in MCNP6.3 and NJOY. The program utilizes the PERT and KSEN methods to generate sensitivities, uses [NJOY2021](https://github.com/njoy/NJOY21) to generate covariance data, and uses NUMPY to do the sandwich rule to propogate uncertainites.
 
 # How to install and test TOFFEE
 1. Download and extract TOFFEE_package.zip into a folder.
