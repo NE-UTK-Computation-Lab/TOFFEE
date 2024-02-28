@@ -1,13 +1,14 @@
 # TOol For Fast Error Estimation (TOFFEE)
-TOFFEE is a Python3 tool that automates cross-section uncertainty analysis using the tool available in MCNP6.3 and NJOY. The program utilizes the PERT and KSEN methods to generate sensitivities, uses NJOY to generate covariance data, and uses NUMPY to do the sandwich rule to calculate uncertainites.
+TOFFEE is a Python3 tool that automates cross-section uncertainty analysis using the tool available in MCNP6.3 and NJOY. The program utilizes the PERT and KSEN methods to generate sensitivities, uses NJOY2021 to generate covariance data, and uses NUMPY to do the sandwich rule to propogate uncertainites.
 
 # How to install and test TOFFEE
 1. Download and extract TOFFEE_package.zip into a folder.
 2. Download the ENDF6 format nuclear data library that you will be using in your MCNP evaluation. This code was designed using [ENDF-B/VIII.0](https://www.nndc.bnl.gov/endf-b8.0/download.html) data.This library should be within a folder that is named `endf_neutron_libraries` by default. An example for hydrogen-1 `endf_neutron_libraries/n-001_H_001.endf` which must be within the folder you extract the TOFFEE_package.  
 3. I have included two example bash scripts that can be used to submit the new generated input file/files. These files should be editied to match your job submission system. If you submit MCNP files with the command line, you can look at these scripts to determine the files you should evaluate and the name of the output files. For KCODE files, 1 file will be evaluated. For SDEF files, several files will need to be evaluated within the `working_dir` folder.
-4. To start TOFFEE, use this command `python3 submit.py` to evaluate the covariance library and input file.
-5. Run the generated input file `perturbed_mcnp.inp` with the output `perturbed_mcnp.out`.
-6. Once the simualtion is complete, use this command `python3 analyze.py` to generate a text file with all variance data, plots of all covariance matrices and sensitivity vectors, and a plot with top contributors to the total response variance.
+4. The `NJOY_run_file.txt` is the file that evaluates NJOY. This bash script will needed to be editied to reference the location of your NJOY install.
+5. To start TOFFEE, use this command `python3 submit.py` to evaluate the covariance library and input file.
+6. Run the generated input file `perturbed_mcnp.inp` with the output `perturbed_mcnp.out`.
+7. Once the simualtion is complete, use this command `python3 analyze.py` to generate a text file with all variance data, plots of all covariance matrices and sensitivity vectors, and a plot with top contributors to the total response variance.
 
 
 # How to use TOFFEE and available options
