@@ -16,6 +16,7 @@ class TOFFEE_class:
         # runs the MCNP files based on the source file
         self.run_mcnp = True
         self.mcnp_file_name = 'test_case.inp'  
+        self.endf_directory = 'endf_neutron_libraries_8/'
         # SCALE 56 group structure in MeV
         self.energy_bin_structure = [1.00E-11,4.00E-09,1.00E-08,2.53E-08,4.00E-08,5.00E-08,6.00E-08,8.00E-08,1.00E-07,1.50E-07,2.00E-07,2.50E-07,3.25E-07,3.50E-07,3.75E-07,4.50E-07,6.25E-07,1.01E-06,1.08E-06,1.13E-06,5.00E-06,6.25E-06,6.50E-06,6.88E-06,7.00E-06,2.05E-05,2.12E-05,2.18E-05,3.60E-05,3.71E-05,6.50E-05,6.75E-05,1.01E-04,1.05E-04,1.16E-04,1.18E-04,1.88E-04,1.92E-04,2.25E-03,3.74E-03,1.70E-02,2.00E-02,5.00E-02,2.00E-01,2.70E-01,3.30E-01,4.70E-01,6.00E-01,7.50E-01,8.61E-01,1.20E+00,1.50E+00,1.85E+00,3.00E+00,4.30E+00,6.43E+00,2.00E+01]
         # evaluates uncertatinty for all available covariance data
@@ -25,9 +26,11 @@ class TOFFEE_class:
         # percent change in density of the nuclides being perturbed
         self.density_change = 0.01
         self.tally_identifier = '1tally        4' 
-        self.location_identifier = 'cell  1' 
-        self.multiplier_identifier = 'multiplier bin:   1.00000E-24'
+        self.location_identifier = 'cell  31' 
+        self.multiplier_identifier = '2.0000E+01'
         self.tally_multiplier = False
+        self.erg_bin_identifier = 'total'
+        self.tally_bin = True
 
     
         ### These are things we keep so the code doesn't need to execute them multiple times
@@ -45,6 +48,8 @@ class TOFFEE_class:
             os.mkdir(self.path+'/sensitivity_plots')
         if not os.path.exists(self.path+'/covariance_plots'):
             os.mkdir(self.path+'/covariance_plots')
+        if not os.path.exists(self.path+'/uncertainty_plots'):
+            os.mkdir(self.path+'/uncertainty_plots')
             
             
         if not os.path.exists(self.path+'cov_info.txt'):
@@ -223,9 +228,16 @@ class TOFFEE_class:
                     temp_list_pert = []
                     for j in range(len(self.reactions_to_evaluate)):
                         temp = []
-                        for k in range(len(self.energy_bin_structure)-1):
-                            pert_string = 'pert'+str(k+1)+':n cell = '+cell_materials[x]+' rho = '+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(self.density_change))-float(list_of_materials[x][2][i]))),9))+' mat = '+str(list_of_materials[x][0])+'000'+str(i+1)+' '+ self.reactions_to_evaluate[j]+' method = 2'+' erg = '+str(self.energy_bin_structure[k])+' '+str(self.energy_bin_structure[k+1])+'\n'
-                            temp.append(pert_string)
+                        if self.reactions_to_evaluate[j] == 'rxn= 4':
+                        
+                            for k in range(len(self.energy_bin_structure)-1):
+                                pert_string = 'pert'+str(k+1)+':n cell = '+cell_materials[x]+' rho = '+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(self.density_change))-float(list_of_materials[x][2][i]))),9))+' mat = '+str(list_of_materials[x][0])+'000'+str(i+1)+' '+'rxn=51 39i 91'+' method = 2'+' erg = '+str(self.energy_bin_structure[k])+' '+str(self.energy_bin_structure[k+1])+'\n'
+                                temp.append(pert_string)
+                        else:
+                            for k in range(len(self.energy_bin_structure)-1):
+                                pert_string = 'pert'+str(k+1)+':n cell = '+cell_materials[x]+' rho = '+str(round(float(list_of_materials[x][3])+((float(list_of_materials[x][2][i])*(1+float(self.density_change))-float(list_of_materials[x][2][i]))),9))+' mat = '+str(list_of_materials[x][0])+'000'+str(i+1)+' '+ self.reactions_to_evaluate[j]+' method = 2'+' erg = '+str(self.energy_bin_structure[k])+' '+str(self.energy_bin_structure[k+1])+'\n'
+                                temp.append(pert_string)
+                                
                         temp_list_pert.append(temp)
                     temp_list_pert_mat.append(temp_list_pert)    
                 list_of_pert.append(temp_list_pert_mat)
@@ -266,59 +278,80 @@ class TOFFEE_class:
     def convert_material_form(self,list_of_materials):
         new_list=[]
         for material in list_of_materials:
-            if float(material[2][0])>0:
+            if float(material[2][0])>0 and float(material[3]) > 0.0:
                 new_list.append(material)
-                continue
-            
-            temp_list=[]
-            for i in range(len(material[1])):
-                materialid=material[1][i]
-                if '.' in material[1][i]:
-                    materialid=material[1][i][:-4]    
-                temp=[materialid]
                 
-                A=float(materialid[-3:])
-                if materialid == '6000':
-                    A=12.0
                 
-                awt= -1*float(material[2][i])/A
-                
-                temp.append(awt)
-                temp_list.append(temp)
-       
-            sum_awt=0
-            for l in temp_list:
-                sum_awt+=l[1]
-        
-            for i in range(len(temp_list)):
-                material[2][i]=temp_list[i][1]/sum_awt
-            
-            eff_A=0
-            for i in range(len(material[1])):
-                materialid=material[1][i]
-                
-                if '.' in material[1][i]:
-                    materialid=material[1][i][:-4]
+            elif float(material[2][0])>0:
+                eff_A=0
+                for i in range(len(material[1])):
+                    materialid=material[1][i]
                     
-                A=float(materialid[-3:])
-                if materialid == '6000':
-                    A=12.0
+                    if '.' in material[1][i]:
+                        materialid=material[1][i][:-4]
+                        
+                    A=float(materialid[-3:])
+                    if materialid == '6000':
+                        A=12.0
+                    eff_A+=A*float(material[2][i])
+                    
+                material[3]=str(-1*float(material[3])/eff_A*6.02*10**23/10**24)
                 
-                eff_A+=A*material[2][i]
-                
-            material[3]=str(-1*float(material[3])/eff_A*6.02*10**23/10**24)
+                for i in range(len(material[2])):
+                    material[2][i] = str(float(material[2][i])*float(material[3]))  
+                    
+                new_list.append(material)
             
-            for i in range(len(material[2])):
-                material[2][i]=str(material[2][i]*float(material[3]))
-                
-            new_list.append(material)
+            else: 
+                temp_list=[]
+                for i in range(len(material[1])):
+                    materialid=material[1][i]
+                    if '.' in material[1][i]:
+                        materialid=material[1][i][:-4]    
+                    temp=[materialid]
+                    
+                    A=float(materialid[-3:])
+                    if materialid == '6000':
+                        A=12.0
+                    
+                    awt= -1*float(material[2][i])/A
+                    
+                    temp.append(awt)
+                    temp_list.append(temp)
+                sum_awt=0
+                for l in temp_list:
+                    sum_awt+=l[1]
             
+                for i in range(len(temp_list)):
+                    material[2][i]=temp_list[i][1]/sum_awt
+                
+                eff_A=0
+                for i in range(len(material[1])):
+                    materialid=material[1][i]
+                    
+                    if '.' in material[1][i]:
+                        materialid=material[1][i][:-4]
+                        
+                    A=float(materialid[-3:])
+                    if materialid == '6000':
+                        A=12.0
+                    
+                    eff_A+=A*material[2][i]
+                    
+                material[3]=str(-1*float(material[3])/eff_A*6.02*10**23/10**24)
+                
+                for i in range(len(material[2])):
+                    material[2][i]=str(material[2][i]*float(material[3]))
+                    
+                new_list.append(material)
+                  
         return new_list
     
     
     ##### This function evaluates the NJOY needed to build the covariance library
     def make_NJOY_covariance(self):
         x = ERRORR_tools()
+        x.endf_folder = self.endf_directory
         x.energy_structure = self.energy_bin_structure
         x.energy_structure = [round(a*10**6,6) for a in x.energy_structure]
         nuclides_needed=[]
@@ -511,6 +544,7 @@ class TOFFEE_class:
     ##### This function pulls the data for a covariance matrix from a csv file and creates a matrix that can be used by python
     def pull_covariance_matrix(self):
         x = ERRORR_tools()
+        x.endf_folder = self.endf_directory
         element=self.element
         #removes the .xxc portion of the nuclide name    
         x.element_call = self.element[:-4]
@@ -597,7 +631,8 @@ class TOFFEE_class:
         #creates a variable for the output file text
         file_output = open(self.output_file_name,'r')
         in_tally  =  False
-        in_tally_1  =  False
+        in_tally_1 = False
+        in_tally_2 = False
         in_data  =  False
         flux = 0
         std = 0
@@ -613,18 +648,36 @@ class TOFFEE_class:
                 count+=1
                 # cell 1 is the cell the f14 tally is loctaed in
                 #this line appears directly above the data line
-                if count==15:
+                if count==1000:
                     in_tally=False
+                    print('Error')
                 if self.location_identifier in line:
                     if self.tally_multiplier:
                         in_tally_1 = True
                         continue
+                        
+                    elif self.tally_bin:
+                        in_tally_2 = True
+                        continue
+                        
                     else:
                         in_data = True 
                         continue
+                        
+                        
                 if self.multiplier_identifier in line and in_tally_1:
                     in_data = True
-                    continue            
+                    continue 
+                    
+                if self.erg_bin_identifier in line and in_tally_2:
+                    in_tally = False
+                    line_split = line.split()
+                    # This pulls the unperturbed f tally value from the MCNP output file
+                    # This value is needed to calculatate the sensitivity
+                    flux = float(line_split[1])
+                    std = float(line_split[2])
+                    break
+                                 
                 if in_data:
                     in_tally = False
                     line_split = line.split()
@@ -637,6 +690,7 @@ class TOFFEE_class:
         file_output.close()
         in_tally = False
         in_tally_1 = False
+        count = 0
         in_data = False
         tally_base[0] = flux
         tally_base[1] = std
@@ -659,14 +713,37 @@ class TOFFEE_class:
                     in_tally =  True
                     continue
                     
-                if self.tally_identifier  in line:
-                    in_tally_1  =  True         
+                
+                if in_tally:
+                    if self.tally_identifier  in line:
+                        in_tally_1  =  True 
+                        continue        
                 # This denotes the cell we are taking the tally in. This could change based on the type of tally chosen to inspect
                 if in_tally_1 == True:
+                    count += 1
+                    if count == 1000:
+                        in_tally_1 = False
                     if self.tally_multiplier:
                         if self.multiplier_identifier in line:
                             in_data = True
                             continue
+                            
+                    if self.tally_bin:
+                        if self.erg_bin_identifier in line:
+                            line_split = line.split()
+                            # change in f tally
+                            c_1 = (float(line_split[1]))/self.density_change
+                            # original f tally
+                            c_0 = float(tallies[0][0])
+                            # creating/ appending sensitivity vector
+                            if c_0 == 0.0:
+                                vector.append(0.0)
+                            else:
+                                vector.append(c_1/c_0)
+                            in_tally = False
+                            in_tally_1 = False
+                            break
+                            
                     else:
                          if self.location_identifier in line:
                             in_data = True
@@ -679,9 +756,13 @@ class TOFFEE_class:
                         # original f tally
                         c_0 = float(tallies[0][0])
                         # creating/ appending sensitivity vector
-                        vector.append(c_1/c_0)
+                        if c_0 == 0.0:
+                            vector.append(0.0)
+                        else:
+                            vector.append(c_1/c_0)
                         in_data = False
                         in_tally = False
+                        in_tally_1 = False
                         break
         file_output.close()
         # Converts the sensitivity vector from a list to an array in order to matrix multiply
@@ -841,14 +922,14 @@ class TOFFEE_class:
                     temp_dictionary = {'nuclide':self.element,'reaction':self.reaction_call,'sensitivity':self.sensitivity_vector.transpose(),'covariance matrix':self.covariance_matrix,'variance':self.variance}
                     self.variance_data_table.append(temp_dictionary)
         
-                
-            if added:    
-                for i in range(len(self.variance_data_table)):
-                    sens_1=self.variance_data_table[i]['sensitivity']
-                    sens_2=np.transpose(sens_1)
-                    temp=np.matmul(sens_2,self.variance_data_table[i]['covariance matrix'])
-                    uncert=np.matmul(temp,sens_1)
-                    self.variance_data_table[i]['variance']=float(uncert)
+                    
+                if added:    
+                    for i in range(len(self.variance_data_table)):
+                        sens_1=self.variance_data_table[i]['sensitivity']
+                        sens_2=np.transpose(sens_1)
+                        temp=np.matmul(sens_2,self.variance_data_table[i]['covariance matrix'])
+                        uncert=np.matmul(temp,sens_1)
+                        self.variance_data_table[i]['variance']=float(uncert)
             
         #### This section does the non-autocovariance matrices
         for element in self.elements_present:
@@ -883,7 +964,7 @@ class TOFFEE_class:
                     self.variance_data_table.append(temp_dictionary)
                     
         
-    ##### This fucntion prints the nuclides, reactions, and total uncertainty
+    ##### This function prints the nuclides, reactions, and total uncertainty
     def print_total_variance(self):
         tot=0
         if self.sensitivity_method == 'KSEN':
@@ -902,12 +983,14 @@ class TOFFEE_class:
                     file.write(f"Covariance for the nuclide {d['nuclide']} for reactions {d['reaction 1']} x {d['reaction 2']} is: {2*d['variance']}\n")
                     if not d['reaction 1'] == 'total':
                         tot+= 2*d['variance']
-            file.write(f"Result: {self.tally} \u00B1 {np.sqrt(tot)*self.tally}")
+            file.write(f"Result: {float(self.tally)} \u00B1 {np.sqrt(np.abs(float(tot)))*float(self.tally)}")
+            print(f'Variance from addition: {float(tot)}')
+            file.close()
             
         self.total_variance=tot
        
         
-    ##### This fucntion prints the nuclides, reactions, and total uncertainty
+    ##### This function prints the nuclides, reactions, and total uncertainty
     def read_ksen_tally(self):
         with open(self.output_file_name) as file:
             for line in file.readlines():
@@ -915,9 +998,11 @@ class TOFFEE_class:
                     self.tally=line.split()[2]
                     
                     
-    ##### This fucntion prints the nuclides, reactions, and total uncertainty
+    ##### This function prints the nuclides, reactions, and total uncertainty
     def read_pert_tally(self):
         in_tally = False
+        in_tally_1 = False
+        in_tally_2 = False
         in_data = False
         with open(self.output_file_name) as file:
             for line in file.readlines():
@@ -928,26 +1013,120 @@ class TOFFEE_class:
                 
                 if in_tally:
                     count+=1
-                    if count==15:
-                        in_tally=False
+                    #if count==15:
+                    #    in_tally=False
                     if self.location_identifier in line:
                         if self.tally_multiplier:
                             in_tally_1 = True
-                            continue   
+                            continue  
+                            
+                        elif self.tally_bin:
+                            in_tally_2 = True
+                            continue  
                         else:
                             in_data = True
                             continue   
                     if self.multiplier_identifier in line and in_tally_1:
                         in_data = True
-                        continue   
+                        continue
+                        
+                    if self.erg_bin_identifier in line and in_tally_2:
+                        line_split = line.split()
+                        self.tally = float(line_split[1])
+                        return
+                          
                     if in_data:
                         line_split = line.split()
                         self.tally = float(line_split[0])
                         return
+                        
+    ##### This function constructs the super matrix to check if the matrix is semi-positive definite                
+    def check_spd(self):
+        size_of_rxn = int(len(self.energy_bin_structure)-1)
+        size_of_element = int(len(self.reactions_to_evaluate)*(size_of_rxn))
+        mat_size =  int(size_of_element*len(self.elements_present))
+        S = np.zeros((mat_size,mat_size))
+        for i in range(len(self.elements_present)):
+            for j in range(len(self.reactions_to_evaluate)):
+                for k in range(len(self.reactions_to_evaluate)):
+                    if j>k:
+                      continue
+                    mt1=self.reactions_to_evaluate[j]
+                    mt2=self.reactions_to_evaluate[k]
                     
+                    self.MT_1=mt1[4:]
+                    self.MT_2=mt2[4:]
                     
+                    self.element=self.elements_present[i]
+                    self.pull_covariance_matrix()
+                    
+                    '''
+                    eigenvalues = np.linalg.eigvalsh(self.covariance_matrix)
+                    semi_positive = np.all(eigenvalues >= 0)
+                    if not semi_positive:
+                        print('Error in:'+self.elements_present[i]+self.reactions_to
+                    '''
+                    
+                    x_1 = int(i*size_of_element+j*size_of_rxn)
+                    x_2 = int(i*size_of_element+(j+1)*size_of_rxn)
+                    
+                    y_1 = int(i*size_of_element+k*size_of_rxn)
+                    y_2 = int(i*size_of_element+(k+1)*size_of_rxn)
+                
+                    S[x_1:x_2,y_1:y_2] =  self.covariance_matrix
+                    if j<k:
+                        S[y_1:y_2,x_1:x_2] =  self.covariance_matrix.T
+        
+        self.Super_matrix = np.copy(S)
+        eigenvalues = np.linalg.eigvalsh(self.Super_matrix)
+        semi_positive = np.all(eigenvalues >= 0)
+        '''
+        while not semi_positive:
+            i+=1
+            self.covariance_correction_ridge()
+            eigenvalues = np.linalg.eigvalsh(self.Super_matrix)
+            semi_positive = np.all(eigenvalues >= 0)
+        '''    
+        figure = plt.figure()
+        axes = figure.add_subplot(111)
+        
+        caxes = axes.matshow(self.Super_matrix)
+        axes.xaxis.set_ticks_position('bottom')
+        figure.colorbar(caxes)
+        plt.title('Super covariance')
+        plt.gca().invert_yaxis()
+        plt.tight_layout()
+        plt.savefig('covariance_plots/super.png')
+        plt.close()
+                                        
+    def covariance_correction_ridge(self):
+        eigenvalues, eigenvectors = np.linalg.eig(self.Super_matrix)
+        
+        neg_eigenvalue = min(eigenvalues)
+        # Construct the diagonal matrix of eigenvalues (Lambda)
+        Lambda = np.diag(eigenvalues) + np.identity(len(eigenvalues))*abs(neg_eigenvalue)
+        
+        # C is the matrix of eigenvectors
+        C = eigenvectors
+        
+        self.Super_matrix = np.real(C @ Lambda @ C.T)  # Reconstruct A   
+        
+    def super_matrix(self):
+        self.super_vector = np.empty(0)
+        for element in self.elements_present:
+            for rxn in self.reaction_names:
+                #{'nuclide':self.element,'reaction':self.reaction_call,'sensitivity':self.sensitivity_vector.transpose(),'covariance matrix':self.covariance_matrix,'variance':self.variance}
+                for entry in self.variance_data_table:
+                    if entry.get('nuclide') == element:
+                      if entry.get('reaction') == rxn:
+                          self.super_vector = np.append(self.super_vector, (entry.get('sensitivity')))
+                          break
+        print(len(self.super_vector))
+        print('Variance from super method:',self.super_vector@self.Super_matrix@self.super_vector.T)
     ##### This function is used to automate the process of doing the uncertainty qunatification process for a set of given reaction rates for all of the data that is available
     def run_and_evaluate(self):
+        
+        self.check_spd()
         
         # This generates mcnp data needed for the sensititvity vectors
         self.run_mcnp_sensitivity()
@@ -1034,6 +1213,42 @@ class TOFFEE_class:
                 plt.savefig('covariance_plots/'+nuc+'_'+rec+'_'+rec_2+'.png')
                 plt.tight_layout()
                 plt.close()
+    ##### This function plots all uncertainties             
+    def plot_uncertainties(self):
+      for data in self.variance_data_table:
+          if 'reaction' in data:
+              nuc = data['nuclide'].split('.')[0]
+              rec = data['reaction']
+              cov = data['covariance matrix']
+              
+              diagonal = np.diag(cov)  # Extract diagonal elements
+              
+              plt.figure()
+              plt.plot(diagonal, marker='o', linestyle='')
+              plt.xlabel('Enegry Group')
+              plt.ylabel('Variance')
+              plt.title(nuc + ' ' + rec + ' Relative Uncertainty')
+              plt.tight_layout()
+              plt.savefig(f'uncertainty_plots/{nuc}_{rec}_diagonal.png')
+              plt.close()
+          '''    
+          else:
+              nuc = data['nuclide'].split('.')[0]
+              rec = data['reaction 1']
+              rec_2 = data['reaction 2']
+              cov = data['covariance matrix']
+              
+              diagonal = np.diag(cov)  # Extract diagonal elements
+              
+              plt.figure()
+              plt.plot(diagonal, marker='o', linestyle='')
+              plt.xlabel('Enegry Group')
+              plt.ylabel('Variance')
+              plt.title(nuc + ' ' + rec + ' Relative Uncertainty')
+              plt.tight_layout()
+              plt.savefig(f'uncertainty_plots/{nuc}_{rec}_{rec_2}_diagonal.png')
+              plt.close()
+          '''
                 
                 
     ##### This function plots the variances from highest to lowest
@@ -1088,21 +1303,5 @@ if __name__  == '__main__':
     main.sensitivity_method='PERT'
     main.mcnp_file_name = 'jezebel.inp'
     main.run_mcnp_sensitivity()
-
-    # with open('temp','rb') as file:
-    #     main = pickle.load(file) 
-    # main.evaluate_variance()
-    
-    # with open('dict_jezebel','wb') as file:
-    #     pickle.dump(main,file,pickle.HIGHEST_PROTOCOL)    
-      
-    # with open('dict_jezebel','rb') as file:
-    #     main = pickle.load(file) 
-    
-    # main.print_total_variance()
-    # main.plot_sensitivity()
-    # main.plot_matrix()
-    # main.plot_variance()
-
     
     print('done in ' + str(round(time.perf_counter()-time_1,3)) + ' seconds')
